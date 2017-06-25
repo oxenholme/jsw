@@ -243,187 +243,6 @@ ENTITYBUF:
 EBOVERFLOW:
   DEFS $BF
 
-; Screen buffer address lookup table
-;
-; Used by the routines at GAMEOVER, DRAWTHINGS and DRAWWILLY. The value of the
-; Nth entry (0<=N<=127) in this lookup table is the screen buffer address for
-; the point with pixel coordinates (x,y)=(0,N), with the origin (0,0) at the
-; top-left corner.
-SBUFADDRS:
-  DEFW $6000              ; y=0
-  DEFW $6100              ; y=1
-  DEFW $6200              ; y=2
-  DEFW $6300              ; y=3
-  DEFW $6400              ; y=4
-  DEFW $6500              ; y=5
-  DEFW $6600              ; y=6
-  DEFW $6700              ; y=7
-  DEFW $6020              ; y=8
-  DEFW $6120              ; y=9
-  DEFW $6220              ; y=10
-  DEFW $6320              ; y=11
-  DEFW $6420              ; y=12
-  DEFW $6520              ; y=13
-  DEFW $6620              ; y=14
-  DEFW $6720              ; y=15
-  DEFW $6040              ; y=16
-  DEFW $6140              ; y=17
-  DEFW $6240              ; y=18
-  DEFW $6340              ; y=19
-  DEFW $6440              ; y=20
-  DEFW $6540              ; y=21
-  DEFW $6640              ; y=22
-  DEFW $6740              ; y=23
-  DEFW $6060              ; y=24
-  DEFW $6160              ; y=25
-  DEFW $6260              ; y=26
-  DEFW $6360              ; y=27
-  DEFW $6460              ; y=28
-  DEFW $6560              ; y=29
-  DEFW $6660              ; y=30
-  DEFW $6760              ; y=31
-  DEFW $6080              ; y=32
-  DEFW $6180              ; y=33
-  DEFW $6280              ; y=34
-  DEFW $6380              ; y=35
-  DEFW $6480              ; y=36
-  DEFW $6580              ; y=37
-  DEFW $6680              ; y=38
-  DEFW $6780              ; y=39
-  DEFW $60A0              ; y=40
-  DEFW $61A0              ; y=41
-  DEFW $62A0              ; y=42
-  DEFW $63A0              ; y=43
-  DEFW $64A0              ; y=44
-  DEFW $65A0              ; y=45
-  DEFW $66A0              ; y=46
-  DEFW $67A0              ; y=47
-  DEFW $60C0              ; y=48
-  DEFW $61C0              ; y=49
-  DEFW $62C0              ; y=50
-  DEFW $63C0              ; y=51
-  DEFW $64C0              ; y=52
-  DEFW $65C0              ; y=53
-  DEFW $66C0              ; y=54
-  DEFW $67C0              ; y=55
-  DEFW $60E0              ; y=56
-  DEFW $61E0              ; y=57
-  DEFW $62E0              ; y=58
-  DEFW $63E0              ; y=59
-  DEFW $64E0              ; y=60
-  DEFW $65E0              ; y=61
-  DEFW $66E0              ; y=62
-  DEFW $67E0              ; y=63
-  DEFW $6800              ; y=64
-  DEFW $6900              ; y=65
-  DEFW $6A00              ; y=66
-  DEFW $6B00              ; y=67
-  DEFW $6C00              ; y=68
-  DEFW $6D00              ; y=69
-  DEFW $6E00              ; y=70
-  DEFW $6F00              ; y=71
-  DEFW $6820              ; y=72
-  DEFW $6920              ; y=73
-  DEFW $6A20              ; y=74
-  DEFW $6B20              ; y=75
-  DEFW $6C20              ; y=76
-  DEFW $6D20              ; y=77
-  DEFW $6E20              ; y=78
-  DEFW $6F20              ; y=79
-  DEFW $6840              ; y=80
-  DEFW $6940              ; y=81
-  DEFW $6A40              ; y=82
-  DEFW $6B40              ; y=83
-  DEFW $6C40              ; y=84
-  DEFW $6D40              ; y=85
-  DEFW $6E40              ; y=86
-  DEFW $6F40              ; y=87
-  DEFW $6860              ; y=88
-  DEFW $6960              ; y=89
-  DEFW $6A60              ; y=90
-  DEFW $6B60              ; y=91
-  DEFW $6C60              ; y=92
-  DEFW $6D60              ; y=93
-  DEFW $6E60              ; y=94
-  DEFW $6F60              ; y=95
-  DEFW $6880              ; y=96
-  DEFW $6980              ; y=97
-  DEFW $6A80              ; y=98
-  DEFW $6B80              ; y=99
-  DEFW $6C80              ; y=100
-  DEFW $6D80              ; y=101
-  DEFW $6E80              ; y=102
-  DEFW $6F80              ; y=103
-  DEFW $68A0              ; y=104
-  DEFW $69A0              ; y=105
-  DEFW $6AA0              ; y=106
-  DEFW $6BA0              ; y=107
-  DEFW $6CA0              ; y=108
-  DEFW $6DA0              ; y=109
-  DEFW $6EA0              ; y=110
-  DEFW $6FA0              ; y=111
-  DEFW $68C0              ; y=112
-  DEFW $69C0              ; y=113
-  DEFW $6AC0              ; y=114
-  DEFW $6BC0              ; y=115
-  DEFW $6CC0              ; y=116
-  DEFW $6DC0              ; y=117
-  DEFW $6EC0              ; y=118
-  DEFW $6FC0              ; y=119
-  DEFW $68E0              ; y=120
-  DEFW $69E0              ; y=121
-  DEFW $6AE0              ; y=122
-  DEFW $6BE0              ; y=123
-  DEFW $6CE0              ; y=124
-  DEFW $6DE0              ; y=125
-  DEFW $6EE0              ; y=126
-  DEFW $6FE0              ; y=127
-
-; Rope animation table
-;
-; Used by the routine at DRAWTHINGS. The first half of this table controls the
-; x-coordinates at which the segments of rope are drawn, and the second half
-; controls the y-coordinates. For a given rope animation frame F
-; (0x00<=F<=0x36), the 32 entries from F to F+31 inclusive (one for each of the
-; 32 segments of rope below the topmost one) in each half of the table are
-; used; thus the batch of entries used 'slides' up and down the table as F
-; increases and decreases.
-ROPEANIM:
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; These values determine how much to
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; rotate the rope drawing byte (which in
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; turn determines the x-coordinate at
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; which each segment of rope is drawn)
-  DEFB $01,$01,$01,$01,$01,$01,$01,$01
-  DEFB $01,$01,$01,$01,$02,$02,$02,$02
-  DEFB $02,$02,$02,$02,$02,$02,$02,$02
-  DEFB $02,$02,$02,$02,$02,$02,$02,$02
-  DEFB $02,$02,$01,$02,$02,$01,$01,$02
-  DEFB $01,$01,$02,$02,$03,$02,$03,$02
-  DEFB $03,$03,$03,$03,$03,$03
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; Unused
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; These values determine the
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; y-coordinate of each segment of rope
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; relative to the one above it
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06
-  DEFB $04,$06,$06,$04,$06,$04,$06,$04
-  DEFB $06,$04,$04,$04,$06,$04,$04,$04
-  DEFB $04,$04,$04,$04,$04,$04,$04,$04
-  DEFB $04,$04,$04,$04,$04,$04,$04,$04
-  DEFB $04,$04,$04,$04,$04,$04
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; Unused
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00
-
 ; Current room number
 ;
 ; Initialised to 0x21 (The Bathroom) by the routine at TITLESCREEN, checked by
@@ -3537,6 +3356,187 @@ INTROSOUND_2:
 
 ; Unused
   DEFS $0397
+
+; Screen buffer address lookup table
+;
+; Used by the routines at GAMEOVER, DRAWTHINGS and DRAWWILLY. The value of the
+; Nth entry (0<=N<=127) in this lookup table is the screen buffer address for
+; the point with pixel coordinates (x,y)=(0,N), with the origin (0,0) at the
+; top-left corner.
+SBUFADDRS:
+  DEFW $6000              ; y=0
+  DEFW $6100              ; y=1
+  DEFW $6200              ; y=2
+  DEFW $6300              ; y=3
+  DEFW $6400              ; y=4
+  DEFW $6500              ; y=5
+  DEFW $6600              ; y=6
+  DEFW $6700              ; y=7
+  DEFW $6020              ; y=8
+  DEFW $6120              ; y=9
+  DEFW $6220              ; y=10
+  DEFW $6320              ; y=11
+  DEFW $6420              ; y=12
+  DEFW $6520              ; y=13
+  DEFW $6620              ; y=14
+  DEFW $6720              ; y=15
+  DEFW $6040              ; y=16
+  DEFW $6140              ; y=17
+  DEFW $6240              ; y=18
+  DEFW $6340              ; y=19
+  DEFW $6440              ; y=20
+  DEFW $6540              ; y=21
+  DEFW $6640              ; y=22
+  DEFW $6740              ; y=23
+  DEFW $6060              ; y=24
+  DEFW $6160              ; y=25
+  DEFW $6260              ; y=26
+  DEFW $6360              ; y=27
+  DEFW $6460              ; y=28
+  DEFW $6560              ; y=29
+  DEFW $6660              ; y=30
+  DEFW $6760              ; y=31
+  DEFW $6080              ; y=32
+  DEFW $6180              ; y=33
+  DEFW $6280              ; y=34
+  DEFW $6380              ; y=35
+  DEFW $6480              ; y=36
+  DEFW $6580              ; y=37
+  DEFW $6680              ; y=38
+  DEFW $6780              ; y=39
+  DEFW $60A0              ; y=40
+  DEFW $61A0              ; y=41
+  DEFW $62A0              ; y=42
+  DEFW $63A0              ; y=43
+  DEFW $64A0              ; y=44
+  DEFW $65A0              ; y=45
+  DEFW $66A0              ; y=46
+  DEFW $67A0              ; y=47
+  DEFW $60C0              ; y=48
+  DEFW $61C0              ; y=49
+  DEFW $62C0              ; y=50
+  DEFW $63C0              ; y=51
+  DEFW $64C0              ; y=52
+  DEFW $65C0              ; y=53
+  DEFW $66C0              ; y=54
+  DEFW $67C0              ; y=55
+  DEFW $60E0              ; y=56
+  DEFW $61E0              ; y=57
+  DEFW $62E0              ; y=58
+  DEFW $63E0              ; y=59
+  DEFW $64E0              ; y=60
+  DEFW $65E0              ; y=61
+  DEFW $66E0              ; y=62
+  DEFW $67E0              ; y=63
+  DEFW $6800              ; y=64
+  DEFW $6900              ; y=65
+  DEFW $6A00              ; y=66
+  DEFW $6B00              ; y=67
+  DEFW $6C00              ; y=68
+  DEFW $6D00              ; y=69
+  DEFW $6E00              ; y=70
+  DEFW $6F00              ; y=71
+  DEFW $6820              ; y=72
+  DEFW $6920              ; y=73
+  DEFW $6A20              ; y=74
+  DEFW $6B20              ; y=75
+  DEFW $6C20              ; y=76
+  DEFW $6D20              ; y=77
+  DEFW $6E20              ; y=78
+  DEFW $6F20              ; y=79
+  DEFW $6840              ; y=80
+  DEFW $6940              ; y=81
+  DEFW $6A40              ; y=82
+  DEFW $6B40              ; y=83
+  DEFW $6C40              ; y=84
+  DEFW $6D40              ; y=85
+  DEFW $6E40              ; y=86
+  DEFW $6F40              ; y=87
+  DEFW $6860              ; y=88
+  DEFW $6960              ; y=89
+  DEFW $6A60              ; y=90
+  DEFW $6B60              ; y=91
+  DEFW $6C60              ; y=92
+  DEFW $6D60              ; y=93
+  DEFW $6E60              ; y=94
+  DEFW $6F60              ; y=95
+  DEFW $6880              ; y=96
+  DEFW $6980              ; y=97
+  DEFW $6A80              ; y=98
+  DEFW $6B80              ; y=99
+  DEFW $6C80              ; y=100
+  DEFW $6D80              ; y=101
+  DEFW $6E80              ; y=102
+  DEFW $6F80              ; y=103
+  DEFW $68A0              ; y=104
+  DEFW $69A0              ; y=105
+  DEFW $6AA0              ; y=106
+  DEFW $6BA0              ; y=107
+  DEFW $6CA0              ; y=108
+  DEFW $6DA0              ; y=109
+  DEFW $6EA0              ; y=110
+  DEFW $6FA0              ; y=111
+  DEFW $68C0              ; y=112
+  DEFW $69C0              ; y=113
+  DEFW $6AC0              ; y=114
+  DEFW $6BC0              ; y=115
+  DEFW $6CC0              ; y=116
+  DEFW $6DC0              ; y=117
+  DEFW $6EC0              ; y=118
+  DEFW $6FC0              ; y=119
+  DEFW $68E0              ; y=120
+  DEFW $69E0              ; y=121
+  DEFW $6AE0              ; y=122
+  DEFW $6BE0              ; y=123
+  DEFW $6CE0              ; y=124
+  DEFW $6DE0              ; y=125
+  DEFW $6EE0              ; y=126
+  DEFW $6FE0              ; y=127
+
+; Rope animation table
+;
+; Used by the routine at DRAWTHINGS. The first half of this table controls the
+; x-coordinates at which the segments of rope are drawn, and the second half
+; controls the y-coordinates. For a given rope animation frame F
+; (0x00<=F<=0x36), the 32 entries from F to F+31 inclusive (one for each of the
+; 32 segments of rope below the topmost one) in each half of the table are
+; used; thus the batch of entries used 'slides' up and down the table as F
+; increases and decreases.
+ROPEANIM:
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; These values determine how much to
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; rotate the rope drawing byte (which in
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; turn determines the x-coordinate at
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; which each segment of rope is drawn)
+  DEFB $01,$01,$01,$01,$01,$01,$01,$01
+  DEFB $01,$01,$01,$01,$02,$02,$02,$02
+  DEFB $02,$02,$02,$02,$02,$02,$02,$02
+  DEFB $02,$02,$02,$02,$02,$02,$02,$02
+  DEFB $02,$02,$01,$02,$02,$01,$01,$02
+  DEFB $01,$01,$02,$02,$03,$02,$03,$02
+  DEFB $03,$03,$03,$03,$03,$03
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; Unused
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; These values determine the
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; y-coordinate of each segment of rope
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; relative to the one above it
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06
+  DEFB $04,$06,$06,$04,$06,$04,$06,$04
+  DEFB $06,$04,$04,$04,$06,$04,$04,$04
+  DEFB $04,$04,$04,$04,$04,$04,$04,$04
+  DEFB $04,$04,$04,$04,$04,$04,$04,$04
+  DEFB $04,$04,$04,$04,$04,$04
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; Unused
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00
 
 ; Attributes for the top two-thirds of the title screen
 ;
