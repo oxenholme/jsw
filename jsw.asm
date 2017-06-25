@@ -8124,9 +8124,9 @@ FLYINGPIG0:
   DEFB $A0,$00,$00,$00,$00,$00,$A0,$00 ; Room layout
   DEFB $A0,$00,$00,$00,$00,$00,$A0,$00
   DEFB $A0,$00,$00,$00,$00,$00,$A0,$00
-  DEFB $A0,$00,$00,$00,$00,$00,$A0,$30
-  DEFB $A0,$00,$00,$00,$00,$00,$A0,$FC
-  DEFB $A0,$00,$00,$00,$00,$00,$A0,$30
+  DEFB $A0,$00,$00,$00,$00,$00,$00,$30
+  DEFB $A0,$00,$00,$00,$00,$00,$00,$FC
+  DEFB $A0,$00,$00,$00,$00,$0A,$A0,$30
   DEFB $A0,$00,$00,$00,$00,$00,$A0,$30
   DEFB $A0,$00,$00,$00,$00,$00,$A0,$30
   DEFB $A0,$00,$00,$00,$00,$00,$A0,$00
@@ -8162,7 +8162,7 @@ FLYINGPIG0:
 ; The next two bytes are copied to XROOM223, but are not used.
   DEFB $00,$00            ; Unused
 ; The next eight bytes are copied to ITEM and define the item graphic.
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; Item graphic
+  DEFB $00,$18,$3C,$3C,$18,$18,$18,$00 ; Item graphic
 ; The next four bytes are copied to LEFT and specify the rooms to the left, to
 ; the right, above and below.
   DEFB $1D                ; Room to the left (The Nightmare Room)
@@ -8217,8 +8217,8 @@ FLYINGPIG0:
   DEFB $44,$FF,$A5,$52,$24,$42,$22,$40,$04 ; Floor
   DEFB $33,$00,$2A,$54,$00,$00,$A2,$45,$00 ; Wall
   DEFB $45,$42,$99,$66,$A1,$9F,$81,$66,$5A ; Nasty (unused)
-  DEFB $07,$80,$C0,$A0,$F0,$F8,$5C,$BA,$02 ; Ramp
-  DEFB $A5,$FF,$5A,$FF,$FF,$AA,$55,$AA,$55 ; Conveyor
+  DEFB $07,$80,$C0,$A0,$F0,$F8,$5C,$BA,$55 ; Ramp
+  DEFB $02,$A5,$FF,$5A,$FF,$FF,$AA,$55,$AA ; Conveyor
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
@@ -8274,7 +8274,7 @@ FLYINGPIG0:
   DEFB $00,$00,$00,$90,$00,$00,$00,$00
   DEFB $00,$00,$00,$94,$00,$00,$00,$00
   DEFB $00,$00,$00,$95,$50,$00,$00,$00
-  DEFB $00,$00,$00,$81,$08,$00,$00,$00
+  DEFB $00,$00,$00,$81,$04,$00,$00,$00
   DEFB $00,$00,$00,$01,$04,$00,$00,$00
   DEFB $00,$00,$00,$00,$04,$00,$00,$00
   DEFB $00,$00,$00,$80,$00,$00,$00,$00
@@ -8362,7 +8362,7 @@ FLYINGPIG0:
   DEFM "          Swimming Pool         " ; Room name
 ; The next 54 bytes are copied to BACKGROUND and contain the attributes and
 ; graphic data for the tiles used to build the room.
-  DEFB $07,$00,$00,$00,$00,$00,$00,$00,$00 ; Background
+  DEFB $05,$00,$00,$00,$00,$00,$00,$00,$00 ; Background
   DEFB $29,$00,$00,$00,$00,$00,$00,$00,$00 ; Floor
   DEFB $3A,$44,$44,$BB,$44,$44,$44,$BB,$44 ; Wall
   DEFB $FF,$00,$00,$00,$00,$00,$00,$00,$00 ; Nasty (unused)
@@ -9116,8 +9116,8 @@ FLYINGPIG0:
                           ; (ENTITY86)
   DEFB $57,$4E            ; Guardian no. 0x57 (vertical), base sprite 2, x=14
                           ; (ENTITY87)
-  DEFB $45,$D5            ; Arrow flying right to left at pixel y-coordinate
-                          ; 536 (ENTITY69)
+  DEFB $45,$52            ; Arrow flying right to left at pixel y-coordinate 41
+                          ; (ENTITY69)
   DEFB $3C,$92            ; Arrow flying left to right at pixel y-coordinate 73
                           ; (ENTITY60)
 
@@ -9209,7 +9209,7 @@ FLYINGPIG0:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$2A,$AA,$AA
-  DEFB $00,$00,$00,$00,$00,$30,$C3,$0C
+  DEFB $00,$00,$00,$00,$00,$30,$C3,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
