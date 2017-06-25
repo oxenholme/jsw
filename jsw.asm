@@ -1110,9 +1110,12 @@ MAINLOOP:
   CALL NZ,MOVEWILLY       ; If not, move Willy
 AFTERMOVE1:
   LD A,(PIXEL_Y)          ; Pick up Willy's pixel y-coordinate from PIXEL_Y
-  CP $E1                  ; Has Willy just moved up a ramp or a rope past the
+  CP $F0                  ; Has Willy just moved up a ramp or a rope past the
                           ; top of the screen?
-  CALL NC,ROOMABOVE       ; If so, move Willy into the room above
+  JP NC,ROOMABOVE         ; If so, move Willy into the room above
+  CP $E0                  ; Has Willy just moved down a ramp or fallen past the
+                          ; bottom of the screen?
+  JP NC,ROOMBELOW         ; If so, move Willy into the room above
 AFTERMOVE2:
   LD A,(MODE)             ; Pick up the game mode indicator from MODE
   CP $03                  ; Is Willy's head down the toilet?
@@ -1788,7 +1791,7 @@ MOVEWILLY:
   LD (HL),A
   CP $F0                  ; Is the new value negative (above the top of the
                           ; screen)?
-  JP NC,ROOMABOVE         ; If so, move Willy into the room above
+  RET NC                  ; Return if so
   CALL MOVEWILLY_8        ; Adjust Willy's attribute buffer location at
                           ; LOCATION depending on his pixel y-coordinate
   LD A,(WALL)             ; Pick up the attribute byte of the wall tile for the
@@ -1848,9 +1851,6 @@ MOVEWILLY_3:
                           ; LOCATION
   LD DE,$0040             ; Point HL at the left-hand cell below Willy's sprite
   ADD HL,DE
-  BIT 1,H                 ; Is this location below the floor of the current
-                          ; room?
-  JP NZ,ROOMBELOW         ; If so, move Willy into the room below
   LD A,(NASTY)            ; Pick up the attribute byte of the nasty tile for
                           ; the current room from NASTY
   CP (HL)                 ; Does the left-hand cell below Willy's sprite
@@ -3056,8 +3056,6 @@ ROOMABOVE:
   LD (PIXEL_Y),A          ; well
   XOR A                   ; Reset the airborne status indicator at AIRBORNE
   LD (AIRBORNE),A
-  POP HL                  ; Drop the return address (either AFTERMOVE1 or
-                          ; AFTERMOVE2, in the main loop) from the stack
   JP INITROOM             ; Draw the room and re-enter the main loop
 
 ; Move Willy into the room below
@@ -3082,8 +3080,6 @@ ROOMBELOW_0:
   LD (LOCATION),A         ; LOCATION) accordingly
   LD A,$5C
   LD (LOCATION+1),A
-  POP HL                  ; Drop the return address (AFTERMOVE1, in the main
-                          ; loop) from the stack
   JP INITROOM             ; Draw the room and re-enter the main loop
 
 ; Move the conveyor in the current room
@@ -3540,7 +3536,7 @@ INTROSOUND_2:
   RET
 
 ; Unused
-  DEFS $0293
+  DEFS $0397
 
 ; Attributes for the top two-thirds of the title screen
 ;
@@ -3600,7 +3596,7 @@ ATTRSLOWER:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 
-  DEFS $140
+  DEFS $40
 
 ; Foot/barrel graphic data
 ;
