@@ -241,7 +241,7 @@ ENTITYBUF:
 ; room, its buffer would spill over from the eighth slot at ENTITYBUF and use
 ; the first and third bytes here.
 EBOVERFLOW:
-  DEFS $BF
+  DEFS $03
 
 ; Current room number
 ;
@@ -308,11 +308,6 @@ TRIANGLE2:
 TRIANGLE3:
   DEFB $FC,$F0,$C0,$00,$00,$00,$00,$00
 
-; 'AIR'
-;
-; This message is not used.
-  DEFM "AIR"
-
 ; '+++++ Press ENTER to Start +++++...'
 ;
 ; Used by the routine at TITLESCREEN.
@@ -329,7 +324,29 @@ MSG_INTRO:
 ;
 ; Used by the routine at INITROOM.
 MSG_STATUS:
-  DEFM "Items collected 000 Time 00:00 m"
+  DEFM "Items collected "
+
+; Number of items collected
+;
+; Initialised by the routine at TITLESCREEN, printed by the routine at
+; MAINLOOP, and updated by the routine at DRAWITEMS.
+MSG_ITEMS:
+  DEFM "000"
+
+  DEFM " Time "
+
+; Current time
+;
+; Initialised by the routine at STARTGAME, and printed and updated by the
+; routine at MAINLOOP.
+MSG_CURTIME:
+  DEFM " 7:00am"
+
+; ' 7:00a'
+;
+; Copied by the routine at STARTGAME to MSG_CURTIME.
+MSG_7AM:
+  DEFM " 7:00a"
 
 ; 'Game'
 ;
@@ -342,26 +359,6 @@ MSG_GAME:
 ; Used by the routine at GAMEOVER.
 MSG_OVER:
   DEFM "Over"
-
-; Number of items collected
-;
-; Initialised by the routine at TITLESCREEN, printed by the routine at
-; MAINLOOP, and updated by the routine at DRAWITEMS.
-MSG_ITEMS:
-  DEFM "000"
-
-; Current time
-;
-; Initialised by the routine at STARTGAME, and printed and updated by the
-; routine at MAINLOOP.
-MSG_CURTIME:
-  DEFM " 7:00a"
-
-; ' 7:00a'
-;
-; Copied by the routine at STARTGAME to MSG_CURTIME.
-MSG_7AM:
-  DEFM " 7:00a"
 
 ; Minute counter
 ;
@@ -381,14 +378,6 @@ TICKS:
 ; LOSELIFE, and used by the routines at DRAWLIVES (when drawing the remaining
 ; lives) and ENDPAUSE (to adjust the speed and pitch of the in-game music).
 LIVES:
-  DEFB $00
-
-; Screen flash counter
-;
-; Initialised to zero by the routine at TITLESCREEN, but never used; the code
-; at SCRFLASH makes the screen flash in Manic Miner fashion if this address
-; holds a non-zero value.
-FLASH:
   DEFB $00
 
 ; Kempston joystick indicator
@@ -624,8 +613,6 @@ TITLESCREEN:
                           ; JOYSTICK
   LD (NOTEINDEX),A        ; Initialise the in-game music note index at
                           ; NOTEINDEX
-  LD (FLASH),A            ; Initialise the (unused) screen flash counter at
-                          ; FLASH
   LD (AIRBORNE),A         ; Initialise the airborne status indicator at
                           ; AIRBORNE
   LD (TICKS),A            ; Initialise the minute counter at TICKS
@@ -966,33 +953,11 @@ MAINLOOP_0:
   LD (HL),A               ; head down it; this has the effect of moving Willy
                           ; at twice his normal speed as he makes his way to
                           ; the toilet (using animation frames 2 and 0)
-SCRFLASH:
-  LD A,(FLASH)            ; Pick up the screen flash counter (unused and always
-                          ; 0) from FLASH
-  OR A                    ; Is it zero?
-  JR Z,MAINLOOP_1         ; Jump if so (this jump is always made)
-; The next section of code is never executed.
-  DEC A                   ; Decrement the screen flash counter at FLASH
-  LD (FLASH),A
-  RLCA                    ; Move bits 0-2 into bits 3-5 and clear all the other
-  RLCA                    ; bits
-  RLCA
-  AND $38
-  LD HL,$5C00             ; Set every attribute byte in the buffer at 23552 to
-  LD DE,$5C01             ; this value
-  LD BC,$01FF
-  LD (HL),A
-  LDIR
-; Normal service resumes here.
 MAINLOOP_1:
   LD HL,$5C00             ; Copy the contents of the attribute buffer at 23552
   LD DE,$5800             ; to the attribute file
   LD BC,$0200
   LDIR
-  LD IX,MSG_CURTIME       ; Print the current time (see MSG_CURTIME) at (19,25)
-  LD DE,$5079
-  LD C,$06
-  CALL PRINTMSG
   LD IX,MSG_ITEMS         ; Print the number of items collected (see MSG_ITEMS)
   LD DE,$5070             ; at (19,16)
   LD C,$03
@@ -1000,7 +965,7 @@ MAINLOOP_1:
   LD A,(TICKS)            ; Increment the minute counter at TICKS
   INC A
   LD (TICKS),A
-  JR NZ,MAINLOOP_3        ; Jump unless the minute counter has ticked over to 0
+  JR NZ,MAINLOOP_4        ; Jump unless the minute counter has ticked over to 0
 ; A minute of game time has passed. Update the game clock accordingly.
   LD IX,MSG_CURTIME       ; Point IX at the current time at MSG_CURTIME
   INC (IX+$04)            ; Increment the units digit of the minute
@@ -1034,8 +999,13 @@ MAINLOOP_2:
   JR NZ,MAINLOOP_3        ; Jump if not
   LD (IX+$01),$30         ; Set the units digit of the hour to '0'
   LD (IX+$00),$31         ; Set the tens digit of the hour to '1'
-; Now check whether any non-movement keys are being pressed.
 MAINLOOP_3:
+  LD IX,MSG_CURTIME       ; Print the current time (see MSG_CURTIME) at (19,25)
+  LD DE,$5079
+  LD C,$06
+  CALL PRINTMSG
+; Now check whether any non-movement keys are being pressed.
+MAINLOOP_4:
   LD BC,$FEFE             ; Read keys SHIFT-Z-X-C-V
   IN A,(C)
   LD E,A                  ; Save the result in E
@@ -2628,35 +2598,6 @@ DRAWTHINGS_22:
   ADD IX,DE               ; buffer
   JP DRAWTHINGS_0         ; Jump back to deal with it
 
-; Unused routine
-;
-; This routine is not used, but if it were, it would set the INK colour for a
-; 3x2 block of cells, maintaining the PAPER, BRIGHT and FLASH attributes of the
-; current room background. It is identical to the code at 8E5F in Manic Miner
-; that is used to set the attributes for a vertical guardian.
-;
-; A INK colour (0-7)
-; HL Attribute buffer address
-U_SETATTRS:
-  LD (HL),A               ; Store the INK colour (bits 0-2)
-  LD A,(BACKGROUND)       ; Collect the current room's background tile
-                          ; attribute from BACKGROUND
-  AND $F8                 ; Keep only bits 3-7 (PAPER, BRIGHT, FLASH)
-  OR (HL)                 ; Merge the INK bits
-  LD (HL),A               ; Store the resultant attribute byte
-  LD DE,$001F             ; Prepare DE for later addition
-  INC HL                  ; Move right one cell and store the attribute byte
-  LD (HL),A               ; there
-  ADD HL,DE               ; Move left one cell and down a row and store the
-  LD (HL),A               ; attribute byte there
-  INC HL                  ; Move right one cell and store the attribute byte
-  LD (HL),A               ; there
-  ADD HL,DE               ; Move left one cell and down a row and store the
-  LD (HL),A               ; attribute byte there
-  INC HL                  ; Move right one cell and store the attribute byte
-  LD (HL),A               ; there
-  RET
-
 ; Draw the items in the current room and collect any that Willy is touching
 ;
 ; Used by the routine at MAINLOOP.
@@ -3355,7 +3296,7 @@ INTROSOUND_2:
   RET
 
 ; Unused
-  DEFS $0397
+  DEFS $0494
 
 ; Screen buffer address lookup table
 ;
