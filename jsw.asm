@@ -6,6 +6,11 @@
 
   ORG $8000
 
+FRAMEATT: EQU $5C00
+ROOMATT:  EQU $5E00
+FRAMEPIX: EQU $6000
+ROOMPIX:  EQU $7000
+
 ; Room layout
 ;
 ; Initialised upon entry to a room and then used by the routine at INITROOM,
@@ -624,7 +629,7 @@ TITLESCREEN:
   LD (PIXEL_Y),A
   LD A,$21                ; Initialise the current room number at ROOM to 0x21
   LD (ROOM),A             ; (The Bathroom)
-  LD HL,$5DB4             ; Initialise Willy's coordinates at LOCATION to
+  LD HL,FRAMEATT+$1B4     ; Initialise Willy's coordinates at LOCATION to
   LD (LOCATION),HL        ; (13,20)
   LD HL,MSG_ITEMS         ; Initialise the number of items collected at
   LD (HL),$30             ; MSG_ITEMS to "000"
@@ -807,7 +812,7 @@ STARTGAME:
 ; STARTGAME also continues here.
 INITROOM:
   LD A,(ROOM)             ; Pick up the current room number from ROOM
-  OR $C0                  ; Point HL at the first byte of the room definition
+  ADD A,ROOMS/$100        ; Point HL at the first byte of the room definition
   LD H,A
   LD L,$00
   LD DE,ROOMLAYOUT        ; Copy the room definition into the game status
@@ -822,7 +827,7 @@ INITROOM:
 INITROOM_0:
   LD L,(IX+$00)           ; Pick up the first byte of the entity specification
   RES 7,L                 ; Point HL at the corresponding entry in the table of
-  LD H,$14                ; entity definitions at ENTITYDEFS
+  LD H,ENTITYDEFS/$800    ; entity definitions at ENTITYDEFS
   ADD HL,HL
   ADD HL,HL
   ADD HL,HL
@@ -902,12 +907,12 @@ DRAWLIVES_0:
 ; Used by the routines at INITROOM and ENDPAUSE.
 MAINLOOP:
   CALL DRAWLIVES          ; Draw the remaining lives
-  LD HL,$5E00             ; Copy the contents of the attribute buffer at 24064
-  LD DE,$5C00             ; (the attributes for the empty room) into the
+  LD HL,ROOMATT           ; Copy the contents of the attribute buffer at 24064
+  LD DE,FRAMEATT          ; (the attributes for the empty room) into the
   LD BC,$0200             ; attribute buffer at 23552
   LDIR
-  LD HL,$7000             ; Copy the contents of the screen buffer at 28672
-  LD DE,$6000             ; (the tiles for the empty room) into the screen
+  LD HL,ROOMPIX           ; Copy the contents of the screen buffer at 28672
+  LD DE,FRAMEPIX          ; (the tiles for the empty room) into the screen
   LD BC,$1000             ; buffer at 24576
   LDIR
   CALL MOVETHINGS         ; Move the rope and guardians in the current room
@@ -941,7 +946,7 @@ AFTERMOVE2:
                           ; any) and collect any that Willy is touching
 ; This entry point is used by the routine at KILLWILLY.
 MAINLOOP_0:
-  LD HL,$6000             ; Copy the contents of the screen buffer at 24576 to
+  LD HL,FRAMEPIX          ; Copy the contents of the screen buffer at 24576 to
   LD DE,$4000             ; the display file
   LD BC,$1000
   LDIR
@@ -954,7 +959,7 @@ MAINLOOP_0:
                           ; at twice his normal speed as he makes his way to
                           ; the toilet (using animation frames 2 and 0)
 MAINLOOP_1:
-  LD HL,$5C00             ; Copy the contents of the attribute buffer at 23552
+  LD HL,FRAMEATT          ; Copy the contents of the attribute buffer at 23552
   LD DE,$5800             ; to the attribute file
   LD BC,$0200
   LDIR
@@ -1309,7 +1314,7 @@ GAMEOVER_0:
   LD L,A
   INC BC
   LD A,(BC)
-  SUB $20
+  SUB FRAMEPIX/$100-$40
   LD H,A
   LD DE,FOOT              ; Draw the foot at this location, without erasing the
   LD C,$00                ; foot at the previous location; this leaves the
@@ -1412,17 +1417,13 @@ GAMEOVER_3:
 DRAWROOM:
   CALL ROOMATTRS          ; Fill the buffer at 24064 with attribute bytes for
                           ; the current room
-  LD IX,$5E00             ; Point IX at the first byte of the attribute buffer
+  LD IX,ROOMATT           ; Point IX at the first byte of the attribute buffer
                           ; at 24064
-  LD A,$70                ; Set the operand of the 'LD D,n' instruction at
+  LD A,ROOMPIX/$100       ; Set the operand of the 'LD D,n' instruction at
   LD (BUFMSB+1),A         ; BUFMSB (below) to $70
   CALL DRAWROOM_0         ; Draw the tiles for the top half of the room to the
                           ; screen buffer at 28672
-  LD IX,$5F00             ; Point IX at the 256th byte of the attribute buffer
-                          ; at 24064 in preparation for drawing the bottom half
-                          ; of the room; this instruction is redundant, since
-                          ; IX already holds 5F00
-  LD A,$78                ; Set the operand of the 'LD D,n' instruction at
+  LD A,ROOMPIX/$100+$08   ; Set the operand of the 'LD D,n' instruction at
   LD (BUFMSB+1),A         ; BUFMSB (below) to $78
 DRAWROOM_0:
   LD C,$00                ; C will count 256 tiles
@@ -1466,7 +1467,7 @@ DRAWROOM_2:
 ROOMATTRS:
   LD HL,ROOMLAYOUT        ; Point HL at the first room layout byte at
                           ; ROOMLAYOUT
-  LD IX,$5E00             ; Point IX at the first byte of the attribute buffer
+  LD IX,ROOMATT           ; Point IX at the first byte of the attribute buffer
                           ; at 24064
 ; The following loop copies the attribute bytes for the background, floor, wall
 ; and nasty tiles into the buffer at 24064.
@@ -1707,7 +1708,7 @@ MOVEWILLY_8:
   XOR A                   ; Clear A and the carry flag
   RL L                    ; Now L=32*(Y-8*INT(Y/8)), and the carry flag is set
                           ; if Willy is in the lower half of the room (Y>=8)
-  ADC A,$5C               ; H=0x5C or 0x5D (MSB of the address of Willy's
+  ADC A,FRAMEATT/$100     ; H=0x5C or 0x5D (MSB of the address of Willy's
   LD H,A                  ; location in the attribute buffer)
   LD A,(LOCATION)         ; Pick up Willy's screen x-coordinate (0-30) from
   AND $1F                 ; bits 0-4 at LOCATION
@@ -2304,7 +2305,7 @@ DRAWTHINGS_0:
   LD A,E                  ; Copy the fourth byte of the guardian's buffer to A
   RLCA                    ; H=0x5C or 0x5D; now HL holds the address of the
   AND $01                 ; guardian's current location in the attribute buffer
-  OR $5C                  ; at 23552
+  OR FRAMEATT/$100        ; at 23552
   LD H,A
   LD DE,$001F             ; Prepare DE for later addition
   LD A,(IX+$01)           ; Pick up the second byte of the guardian's buffer
@@ -2395,7 +2396,7 @@ DRAWTHINGS_7:
   LD A,E                  ; attribute buffer at 23552
   AND $80
   RLCA
-  OR $5C
+  OR FRAMEATT/$100
   LD H,A
   LD (IX+$05),$00         ; Initialise the collision detection byte (0x00=off,
                           ; 0xFF=on)
@@ -2624,7 +2625,7 @@ DRAWITEMS_0:
                           ; item table
   RLCA                    ; Point DE at the location of the item in the
   AND $01                 ; attribute buffer at 23552
-  ADD A,$5C
+  ADD A,FRAMEATT/$100
   LD D,A
   INC H
   LD E,(HL)
@@ -2691,7 +2692,7 @@ DRAWITEMS_6:
   RLCA
   RLCA
   AND $08
-  ADD A,$60
+  ADD A,FRAMEPIX/$100
   LD D,A
   PUSH HL                 ; Save HL briefly
   LD HL,ITEM              ; Point HL at the item graphic for the current room
@@ -2810,7 +2811,7 @@ ROOMABOVE:
   AND $1F                 ; room, so adjust his attribute buffer coordinates
   ADD A,$A0               ; (at LOCATION) accordingly
   LD (LOCATION),A
-  LD A,$5D
+  LD A,FRAMEATT/$100+$01
   LD (LOCATION+1),A
   LD A,$D0                ; Adjust Willy's pixel y-coordinate (at PIXEL_Y) as
   LD (PIXEL_Y),A          ; well
@@ -2838,7 +2839,7 @@ ROOMBELOW_0:
   LD A,(LOCATION)         ; Willy should now appear at the top of the room, so
   AND $1F                 ; adjust his attribute buffer coordinates (at
   LD (LOCATION),A         ; LOCATION) accordingly
-  LD A,$5C
+  LD A,FRAMEATT/$100
   LD (LOCATION+1),A
   JP INITROOM             ; Draw the room and re-enter the main loop
 
@@ -2853,7 +2854,7 @@ MVCONVEYOR:
   RLCA
   RLCA
   RLCA
-  ADD A,$70
+  ADD A,ROOMPIX/$100
   LD H,A
   LD E,L
   LD D,H
@@ -2924,15 +2925,15 @@ BEDANDBATH:
 BEDANDBATH_0:
   LD D,MARIA0/256         ; Point DE at the sprite graphic data for Maria
                           ; (MARIA0, MARIA1, MARIA2 or MARIA3)
-  LD HL,$686E             ; Draw Maria at (11,14) in the screen buffer at 24576
+  LD HL,FRAMEPIX+$86E     ; Draw Maria at (11,14) in the screen buffer at 24576
   LD C,$01
   CALL DRAWSPRITE
   JP NZ,KILLWILLY_0       ; Kill Willy if Maria collided with him
   LD HL,$4545             ; H=L=0x45 (INK 5: PAPER 0: BRIGHT 1)
-  LD ($5D6E),HL           ; Set the attribute bytes for the top half of Maria's
+  LD (FRAMEATT+$16E),HL   ; Set the attribute bytes for the top half of Maria's
                           ; sprite in the buffer at 23552
   LD HL,$0707             ; H=L=0x07 (INK 7: PAPER 0: BRIGHT 0)
-  LD ($5D8E),HL           ; Set the attribute bytes for the bottom half of
+  LD (FRAMEATT+$18E),HL   ; Set the attribute bytes for the bottom half of
                           ; Maria's sprite in the buffer at 23552
   RET
 ; Willy has collected all the items, so Maria is gone.
@@ -2990,8 +2991,8 @@ DRAWTOILET_0:
   LD BC,$101C             ; 24576
   CALL DRAWWILLY_1
   LD HL,$0707             ; H=L=0x07 (INK 7: PAPER 0)
-  LD ($5DBC),HL           ; Set the attribute bytes for the toilet in the
-  LD ($5DDC),HL           ; buffer at 23552
+  LD (FRAMEATT+$1BC),HL   ; Set the attribute bytes for the toilet in the
+  LD (FRAMEATT+$1DC),HL   ; buffer at 23552
   RET
 
 ; Check and set the attribute bytes for Willy's sprite in the buffer at 5C00
@@ -3296,7 +3297,7 @@ INTROSOUND_2:
   RET
 
 ; Unused
-  DEFS $0494
+  DEFS $0498
 
 ; Screen buffer address lookup table
 ;
@@ -3305,134 +3306,134 @@ INTROSOUND_2:
 ; the point with pixel coordinates (x,y)=(0,N), with the origin (0,0) at the
 ; top-left corner.
 SBUFADDRS:
-  DEFW $6000              ; y=0
-  DEFW $6100              ; y=1
-  DEFW $6200              ; y=2
-  DEFW $6300              ; y=3
-  DEFW $6400              ; y=4
-  DEFW $6500              ; y=5
-  DEFW $6600              ; y=6
-  DEFW $6700              ; y=7
-  DEFW $6020              ; y=8
-  DEFW $6120              ; y=9
-  DEFW $6220              ; y=10
-  DEFW $6320              ; y=11
-  DEFW $6420              ; y=12
-  DEFW $6520              ; y=13
-  DEFW $6620              ; y=14
-  DEFW $6720              ; y=15
-  DEFW $6040              ; y=16
-  DEFW $6140              ; y=17
-  DEFW $6240              ; y=18
-  DEFW $6340              ; y=19
-  DEFW $6440              ; y=20
-  DEFW $6540              ; y=21
-  DEFW $6640              ; y=22
-  DEFW $6740              ; y=23
-  DEFW $6060              ; y=24
-  DEFW $6160              ; y=25
-  DEFW $6260              ; y=26
-  DEFW $6360              ; y=27
-  DEFW $6460              ; y=28
-  DEFW $6560              ; y=29
-  DEFW $6660              ; y=30
-  DEFW $6760              ; y=31
-  DEFW $6080              ; y=32
-  DEFW $6180              ; y=33
-  DEFW $6280              ; y=34
-  DEFW $6380              ; y=35
-  DEFW $6480              ; y=36
-  DEFW $6580              ; y=37
-  DEFW $6680              ; y=38
-  DEFW $6780              ; y=39
-  DEFW $60A0              ; y=40
-  DEFW $61A0              ; y=41
-  DEFW $62A0              ; y=42
-  DEFW $63A0              ; y=43
-  DEFW $64A0              ; y=44
-  DEFW $65A0              ; y=45
-  DEFW $66A0              ; y=46
-  DEFW $67A0              ; y=47
-  DEFW $60C0              ; y=48
-  DEFW $61C0              ; y=49
-  DEFW $62C0              ; y=50
-  DEFW $63C0              ; y=51
-  DEFW $64C0              ; y=52
-  DEFW $65C0              ; y=53
-  DEFW $66C0              ; y=54
-  DEFW $67C0              ; y=55
-  DEFW $60E0              ; y=56
-  DEFW $61E0              ; y=57
-  DEFW $62E0              ; y=58
-  DEFW $63E0              ; y=59
-  DEFW $64E0              ; y=60
-  DEFW $65E0              ; y=61
-  DEFW $66E0              ; y=62
-  DEFW $67E0              ; y=63
-  DEFW $6800              ; y=64
-  DEFW $6900              ; y=65
-  DEFW $6A00              ; y=66
-  DEFW $6B00              ; y=67
-  DEFW $6C00              ; y=68
-  DEFW $6D00              ; y=69
-  DEFW $6E00              ; y=70
-  DEFW $6F00              ; y=71
-  DEFW $6820              ; y=72
-  DEFW $6920              ; y=73
-  DEFW $6A20              ; y=74
-  DEFW $6B20              ; y=75
-  DEFW $6C20              ; y=76
-  DEFW $6D20              ; y=77
-  DEFW $6E20              ; y=78
-  DEFW $6F20              ; y=79
-  DEFW $6840              ; y=80
-  DEFW $6940              ; y=81
-  DEFW $6A40              ; y=82
-  DEFW $6B40              ; y=83
-  DEFW $6C40              ; y=84
-  DEFW $6D40              ; y=85
-  DEFW $6E40              ; y=86
-  DEFW $6F40              ; y=87
-  DEFW $6860              ; y=88
-  DEFW $6960              ; y=89
-  DEFW $6A60              ; y=90
-  DEFW $6B60              ; y=91
-  DEFW $6C60              ; y=92
-  DEFW $6D60              ; y=93
-  DEFW $6E60              ; y=94
-  DEFW $6F60              ; y=95
-  DEFW $6880              ; y=96
-  DEFW $6980              ; y=97
-  DEFW $6A80              ; y=98
-  DEFW $6B80              ; y=99
-  DEFW $6C80              ; y=100
-  DEFW $6D80              ; y=101
-  DEFW $6E80              ; y=102
-  DEFW $6F80              ; y=103
-  DEFW $68A0              ; y=104
-  DEFW $69A0              ; y=105
-  DEFW $6AA0              ; y=106
-  DEFW $6BA0              ; y=107
-  DEFW $6CA0              ; y=108
-  DEFW $6DA0              ; y=109
-  DEFW $6EA0              ; y=110
-  DEFW $6FA0              ; y=111
-  DEFW $68C0              ; y=112
-  DEFW $69C0              ; y=113
-  DEFW $6AC0              ; y=114
-  DEFW $6BC0              ; y=115
-  DEFW $6CC0              ; y=116
-  DEFW $6DC0              ; y=117
-  DEFW $6EC0              ; y=118
-  DEFW $6FC0              ; y=119
-  DEFW $68E0              ; y=120
-  DEFW $69E0              ; y=121
-  DEFW $6AE0              ; y=122
-  DEFW $6BE0              ; y=123
-  DEFW $6CE0              ; y=124
-  DEFW $6DE0              ; y=125
-  DEFW $6EE0              ; y=126
-  DEFW $6FE0              ; y=127
+  DEFW FRAMEPIX+$000      ; y=0
+  DEFW FRAMEPIX+$100      ; y=1
+  DEFW FRAMEPIX+$200      ; y=2
+  DEFW FRAMEPIX+$300      ; y=3
+  DEFW FRAMEPIX+$400      ; y=4
+  DEFW FRAMEPIX+$500      ; y=5
+  DEFW FRAMEPIX+$600      ; y=6
+  DEFW FRAMEPIX+$700      ; y=7
+  DEFW FRAMEPIX+$020      ; y=8
+  DEFW FRAMEPIX+$120      ; y=9
+  DEFW FRAMEPIX+$220      ; y=10
+  DEFW FRAMEPIX+$320      ; y=11
+  DEFW FRAMEPIX+$420      ; y=12
+  DEFW FRAMEPIX+$520      ; y=13
+  DEFW FRAMEPIX+$620      ; y=14
+  DEFW FRAMEPIX+$720      ; y=15
+  DEFW FRAMEPIX+$040      ; y=16
+  DEFW FRAMEPIX+$140      ; y=17
+  DEFW FRAMEPIX+$240      ; y=18
+  DEFW FRAMEPIX+$340      ; y=19
+  DEFW FRAMEPIX+$440      ; y=20
+  DEFW FRAMEPIX+$540      ; y=21
+  DEFW FRAMEPIX+$640      ; y=22
+  DEFW FRAMEPIX+$740      ; y=23
+  DEFW FRAMEPIX+$060      ; y=24
+  DEFW FRAMEPIX+$160      ; y=25
+  DEFW FRAMEPIX+$260      ; y=26
+  DEFW FRAMEPIX+$360      ; y=27
+  DEFW FRAMEPIX+$460      ; y=28
+  DEFW FRAMEPIX+$560      ; y=29
+  DEFW FRAMEPIX+$660      ; y=30
+  DEFW FRAMEPIX+$760      ; y=31
+  DEFW FRAMEPIX+$080      ; y=32
+  DEFW FRAMEPIX+$180      ; y=33
+  DEFW FRAMEPIX+$280      ; y=34
+  DEFW FRAMEPIX+$380      ; y=35
+  DEFW FRAMEPIX+$480      ; y=36
+  DEFW FRAMEPIX+$580      ; y=37
+  DEFW FRAMEPIX+$680      ; y=38
+  DEFW FRAMEPIX+$780      ; y=39
+  DEFW FRAMEPIX+$0A0      ; y=40
+  DEFW FRAMEPIX+$1A0      ; y=41
+  DEFW FRAMEPIX+$2A0      ; y=42
+  DEFW FRAMEPIX+$3A0      ; y=43
+  DEFW FRAMEPIX+$4A0      ; y=44
+  DEFW FRAMEPIX+$5A0      ; y=45
+  DEFW FRAMEPIX+$6A0      ; y=46
+  DEFW FRAMEPIX+$7A0      ; y=47
+  DEFW FRAMEPIX+$0C0      ; y=48
+  DEFW FRAMEPIX+$1C0      ; y=49
+  DEFW FRAMEPIX+$2C0      ; y=50
+  DEFW FRAMEPIX+$3C0      ; y=51
+  DEFW FRAMEPIX+$4C0      ; y=52
+  DEFW FRAMEPIX+$5C0      ; y=53
+  DEFW FRAMEPIX+$6C0      ; y=54
+  DEFW FRAMEPIX+$7C0      ; y=55
+  DEFW FRAMEPIX+$0E0      ; y=56
+  DEFW FRAMEPIX+$1E0      ; y=57
+  DEFW FRAMEPIX+$2E0      ; y=58
+  DEFW FRAMEPIX+$3E0      ; y=59
+  DEFW FRAMEPIX+$4E0      ; y=60
+  DEFW FRAMEPIX+$5E0      ; y=61
+  DEFW FRAMEPIX+$6E0      ; y=62
+  DEFW FRAMEPIX+$7E0      ; y=63
+  DEFW FRAMEPIX+$800      ; y=64
+  DEFW FRAMEPIX+$900      ; y=65
+  DEFW FRAMEPIX+$A00      ; y=66
+  DEFW FRAMEPIX+$B00      ; y=67
+  DEFW FRAMEPIX+$C00      ; y=68
+  DEFW FRAMEPIX+$D00      ; y=69
+  DEFW FRAMEPIX+$E00      ; y=70
+  DEFW FRAMEPIX+$F00      ; y=71
+  DEFW FRAMEPIX+$820      ; y=72
+  DEFW FRAMEPIX+$920      ; y=73
+  DEFW FRAMEPIX+$A20      ; y=74
+  DEFW FRAMEPIX+$B20      ; y=75
+  DEFW FRAMEPIX+$C20      ; y=76
+  DEFW FRAMEPIX+$D20      ; y=77
+  DEFW FRAMEPIX+$E20      ; y=78
+  DEFW FRAMEPIX+$F20      ; y=79
+  DEFW FRAMEPIX+$840      ; y=80
+  DEFW FRAMEPIX+$940      ; y=81
+  DEFW FRAMEPIX+$A40      ; y=82
+  DEFW FRAMEPIX+$B40      ; y=83
+  DEFW FRAMEPIX+$C40      ; y=84
+  DEFW FRAMEPIX+$D40      ; y=85
+  DEFW FRAMEPIX+$E40      ; y=86
+  DEFW FRAMEPIX+$F40      ; y=87
+  DEFW FRAMEPIX+$860      ; y=88
+  DEFW FRAMEPIX+$960      ; y=89
+  DEFW FRAMEPIX+$A60      ; y=90
+  DEFW FRAMEPIX+$B60      ; y=91
+  DEFW FRAMEPIX+$C60      ; y=92
+  DEFW FRAMEPIX+$D60      ; y=93
+  DEFW FRAMEPIX+$E60      ; y=94
+  DEFW FRAMEPIX+$F60      ; y=95
+  DEFW FRAMEPIX+$880      ; y=96
+  DEFW FRAMEPIX+$980      ; y=97
+  DEFW FRAMEPIX+$A80      ; y=98
+  DEFW FRAMEPIX+$B80      ; y=99
+  DEFW FRAMEPIX+$C80      ; y=100
+  DEFW FRAMEPIX+$D80      ; y=101
+  DEFW FRAMEPIX+$E80      ; y=102
+  DEFW FRAMEPIX+$F80      ; y=103
+  DEFW FRAMEPIX+$8A0      ; y=104
+  DEFW FRAMEPIX+$9A0      ; y=105
+  DEFW FRAMEPIX+$AA0      ; y=106
+  DEFW FRAMEPIX+$BA0      ; y=107
+  DEFW FRAMEPIX+$CA0      ; y=108
+  DEFW FRAMEPIX+$DA0      ; y=109
+  DEFW FRAMEPIX+$EA0      ; y=110
+  DEFW FRAMEPIX+$FA0      ; y=111
+  DEFW FRAMEPIX+$8C0      ; y=112
+  DEFW FRAMEPIX+$9C0      ; y=113
+  DEFW FRAMEPIX+$AC0      ; y=114
+  DEFW FRAMEPIX+$BC0      ; y=115
+  DEFW FRAMEPIX+$CC0      ; y=116
+  DEFW FRAMEPIX+$DC0      ; y=117
+  DEFW FRAMEPIX+$EC0      ; y=118
+  DEFW FRAMEPIX+$FC0      ; y=119
+  DEFW FRAMEPIX+$8E0      ; y=120
+  DEFW FRAMEPIX+$9E0      ; y=121
+  DEFW FRAMEPIX+$AE0      ; y=122
+  DEFW FRAMEPIX+$BE0      ; y=123
+  DEFW FRAMEPIX+$CE0      ; y=124
+  DEFW FRAMEPIX+$DE0      ; y=125
+  DEFW FRAMEPIX+$EE0      ; y=126
+  DEFW FRAMEPIX+$FE0      ; y=127
 
 ; Rope animation table
 ;
@@ -3631,7 +3632,7 @@ ENTITY2:
   DEFB $80                ; Initial pixel y-coordinate: 64
   DEFB $02                ; Initial pixel y-coordinate increment: 1 (moving
                           ; down)
-  DEFB $BF                ; Page containing the sprite graphic data: 0xBF
+  DEFB GUARDIANS/$100+$14 ; Page containing the sprite graphic data: 0xBF
   DEFB $50                ; Minimum pixel y-coordinate: 40
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x03) is used in The Security Guard, I'm
@@ -3648,7 +3649,7 @@ ENTITY3:
   DEFB $A0                ; Initial pixel y-coordinate: 80
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $BF                ; Page containing the sprite graphic data: 0xBF
+  DEFB GUARDIANS/$100+$14 ; Page containing the sprite graphic data: 0xBF
   DEFB $58                ; Minimum pixel y-coordinate: 44
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x04) is used in The Security Guard, Rescue
@@ -3665,7 +3666,7 @@ ENTITY4:
   DEFB $60                ; Initial pixel y-coordinate: 48
   DEFB $08                ; Initial pixel y-coordinate increment: 4 (moving
                           ; down)
-  DEFB $BF                ; Page containing the sprite graphic data: 0xBF
+  DEFB GUARDIANS/$100+$14 ; Page containing the sprite graphic data: 0xBF
   DEFB $60                ; Minimum pixel y-coordinate: 48
   DEFB $C0                ; Maximum pixel y-coordinate: 96
 ; The following entity definition (0x05) is used in I'm sure I've seen this
@@ -3682,7 +3683,7 @@ ENTITY5:
   DEFB $40                ; Initial pixel y-coordinate: 32
   DEFB $0C                ; Initial pixel y-coordinate increment: 6 (moving
                           ; down)
-  DEFB $BF                ; Page containing the sprite graphic data: 0xBF
+  DEFB GUARDIANS/$100+$14 ; Page containing the sprite graphic data: 0xBF
   DEFB $40                ; Minimum pixel y-coordinate: 32
   DEFB $C0                ; Maximum pixel y-coordinate: 96
 ; The following entity definition (0x06) is used in At the Foot of the
@@ -3699,7 +3700,7 @@ ENTITY6:
   DEFB $40                ; Initial pixel y-coordinate: 32
   DEFB $0A                ; Initial pixel y-coordinate increment: 5 (moving
                           ; down)
-  DEFB $BF                ; Page containing the sprite graphic data: 0xBF
+  DEFB GUARDIANS/$100+$14 ; Page containing the sprite graphic data: 0xBF
   DEFB $40                ; Minimum pixel y-coordinate: 32
   DEFB $B0                ; Maximum pixel y-coordinate: 88
 ; The following entity definition (0x07) is used in At the Foot of the MegaTree
@@ -3716,7 +3717,7 @@ ENTITY7:
   DEFB $64                ; Initial pixel y-coordinate: 50
   DEFB $F4                ; Initial pixel y-coordinate increment: -6 (moving
                           ; up)
-  DEFB $BF                ; Page containing the sprite graphic data: 0xBF
+  DEFB GUARDIANS/$100+$14 ; Page containing the sprite graphic data: 0xBF
   DEFB $20                ; Minimum pixel y-coordinate: 16
   DEFB $A0                ; Maximum pixel y-coordinate: 80
 ; The following entity definition (0x08) is used in At the Foot of the
@@ -3733,7 +3734,7 @@ ENTITY8:
   DEFB $80                ; Initial pixel y-coordinate: 64
   DEFB $06                ; Initial pixel y-coordinate increment: 3 (moving
                           ; down)
-  DEFB $BF                ; Page containing the sprite graphic data: 0xBF
+  DEFB GUARDIANS/$100+$14 ; Page containing the sprite graphic data: 0xBF
   DEFB $26                ; Minimum pixel y-coordinate: 19
   DEFB $B0                ; Maximum pixel y-coordinate: 88
 ; The following entity definition (0x09) is used in Inside the MegaTrunk and On
@@ -3750,7 +3751,7 @@ ENTITY9:
   DEFB $A0                ; Initial pixel y-coordinate: 80
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $BF                ; Page containing the sprite graphic data: 0xBF
+  DEFB GUARDIANS/$100+$14 ; Page containing the sprite graphic data: 0xBF
   DEFB $80                ; Minimum pixel y-coordinate: 64
   DEFB $E0                ; Maximum pixel y-coordinate: 112
 ; The following entity definition (0x0A) is used in The Off Licence.
@@ -3766,7 +3767,7 @@ ENTITY10:
   DEFB $60                ; Initial pixel y-coordinate: 48
   DEFB $08                ; Initial pixel y-coordinate increment: 4 (moving
                           ; down)
-  DEFB $BE                ; Page containing the sprite graphic data: 0xBE
+  DEFB GUARDIANS/$100+$13 ; Page containing the sprite graphic data: 0xBE
   DEFB $10                ; Minimum pixel y-coordinate: 8
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x0B) is used in Dr Jones will never believe
@@ -3783,7 +3784,7 @@ ENTITY11:
   DEFB $C0                ; Initial pixel y-coordinate: 96
   DEFB $F6                ; Initial pixel y-coordinate increment: -5 (moving
                           ; up)
-  DEFB $BF                ; Page containing the sprite graphic data: 0xBF
+  DEFB GUARDIANS/$100+$14 ; Page containing the sprite graphic data: 0xBF
   DEFB $70                ; Minimum pixel y-coordinate: 56
   DEFB $C0                ; Maximum pixel y-coordinate: 96
 ; The following entity definition (0x0C) is used in The Off Licence.
@@ -3798,7 +3799,7 @@ ENTITY12:
                           ; entity specification in the room definition)
   DEFB $70                ; Pixel y-coordinate: 56
   DEFB $01                ; Unused
-  DEFB $BE                ; Page containing the sprite graphic data: 0xBE
+  DEFB GUARDIANS/$100+$13 ; Page containing the sprite graphic data: 0xBE
   DEFB $13                ; Minimum x-coordinate: 19
   DEFB $1D                ; Maximum x-coordinate: 29
 ; The following entity definition (0x0D) is used in Rescue Esmerelda, I'm sure
@@ -3814,7 +3815,7 @@ ENTITY13:
                           ; entity specification in the room definition)
   DEFB $40                ; Pixel y-coordinate: 32
   DEFB $00                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $09                ; Maximum x-coordinate: 9
 ; The following entity definition (0x0E) is used in The Bridge.
@@ -3830,7 +3831,7 @@ ENTITY14:
   DEFB $30                ; Initial pixel y-coordinate: 24
   DEFB $0C                ; Initial pixel y-coordinate increment: 6 (moving
                           ; down)
-  DEFB $B9                ; Page containing the sprite graphic data: 0xB9
+  DEFB GUARDIANS/$100+$0E ; Page containing the sprite graphic data: 0xB9
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $C0                ; Maximum pixel y-coordinate: 96
 ; The following entity definition (0x0F) is used in Rescue Esmerelda.
@@ -3846,7 +3847,7 @@ ENTITY15:
   DEFB $10                ; Initial pixel y-coordinate: 8
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $B0                ; Page containing the sprite graphic data: 0xB0
+  DEFB GUARDIANS/$100+$05 ; Page containing the sprite graphic data: 0xB0
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $20                ; Maximum pixel y-coordinate: 16
 ; The following entity definition (0x10) is used in Entrance to Hades, The
@@ -3862,7 +3863,7 @@ ENTITY16:
   DEFB $60                ; Initial pixel y-coordinate: 48
   DEFB $02                ; Initial pixel y-coordinate increment: 1 (moving
                           ; down)
-  DEFB $BA                ; Page containing the sprite graphic data: 0xBA
+  DEFB GUARDIANS/$100+$0F ; Page containing the sprite graphic data: 0xBA
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $B0                ; Maximum pixel y-coordinate: 88
 ; The following entity definition (0x11) is used in Entrance to Hades, The
@@ -3878,7 +3879,7 @@ ENTITY17:
   DEFB $60                ; Initial pixel y-coordinate: 48
   DEFB $02                ; Initial pixel y-coordinate increment: 1 (moving
                           ; down)
-  DEFB $BA                ; Page containing the sprite graphic data: 0xBA
+  DEFB GUARDIANS/$100+$0F ; Page containing the sprite graphic data: 0xBA
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $B0                ; Maximum pixel y-coordinate: 88
 ; The following entity definition (0x12) is used in Entrance to Hades, The
@@ -3895,7 +3896,7 @@ ENTITY18:
   DEFB $80                ; Initial pixel y-coordinate: 64
   DEFB $02                ; Initial pixel y-coordinate increment: 1 (moving
                           ; down)
-  DEFB $BA                ; Page containing the sprite graphic data: 0xBA
+  DEFB GUARDIANS/$100+$0F ; Page containing the sprite graphic data: 0xBA
   DEFB $20                ; Minimum pixel y-coordinate: 16
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x13) is used in Ballroom East and Top
@@ -3911,7 +3912,7 @@ ENTITY19:
   DEFB $20                ; Initial pixel y-coordinate: 16
   DEFB $02                ; Initial pixel y-coordinate increment: 1 (moving
                           ; down)
-  DEFB $9C                ; Page containing the sprite graphic data: 0x9C
+  DEFB BARREL/$100        ; Page containing the sprite graphic data: 0x9C
   DEFB $20                ; Minimum pixel y-coordinate: 16
   DEFB $60                ; Maximum pixel y-coordinate: 48
 ; The following entity definition (0x14) is used in The Bridge and West  Wing.
@@ -3926,7 +3927,7 @@ ENTITY20:
                           ; entity specification in the room definition)
   DEFB $A0                ; Pixel y-coordinate: 80
   DEFB $00                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $0A                ; Maximum x-coordinate: 10
 ; The following entity definition (0x15) is used in The Bridge, The Drive and
@@ -3942,7 +3943,7 @@ ENTITY21:
                           ; entity specification in the room definition)
   DEFB $A0                ; Pixel y-coordinate: 80
   DEFB $00                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $0E                ; Minimum x-coordinate: 14
   DEFB $1D                ; Maximum x-coordinate: 29
 ; The following entity definition (0x16) is used in The Drive and Inside the
@@ -3958,7 +3959,7 @@ ENTITY22:
                           ; entity specification in the room definition)
   DEFB $B0                ; Pixel y-coordinate: 88
   DEFB $01                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $10                ; Minimum x-coordinate: 16
   DEFB $1D                ; Maximum x-coordinate: 29
 ; The following entity definition (0x17) is used in The Drive.
@@ -3973,7 +3974,7 @@ ENTITY23:
                           ; entity specification in the room definition)
   DEFB $80                ; Pixel y-coordinate: 64
   DEFB $00                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $05                ; Minimum x-coordinate: 5
   DEFB $1D                ; Maximum x-coordinate: 29
 ; The following entity definition (0x18) is used in The Drive, Inside the
@@ -3989,7 +3990,7 @@ ENTITY24:
                           ; entity specification in the room definition)
   DEFB $50                ; Pixel y-coordinate: 40
   DEFB $00                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $0A                ; Maximum x-coordinate: 10
 ; The following entity definition (0x19) is used in Out on a limb.
@@ -4004,7 +4005,7 @@ ENTITY25:
                           ; entity specification in the room definition)
   DEFB $70                ; Pixel y-coordinate: 56
   DEFB $00                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $0E                ; Minimum x-coordinate: 14
   DEFB $17                ; Maximum x-coordinate: 23
 ; The following entity definition (0x1A) is used in Under the MegaTree, The
@@ -4020,7 +4021,7 @@ ENTITY26:
                           ; entity specification in the room definition)
   DEFB $30                ; Pixel y-coordinate: 24
   DEFB $00                ; Unused
-  DEFB $B6                ; Page containing the sprite graphic data: 0xB6
+  DEFB GUARDIANS/$100+$0B ; Page containing the sprite graphic data: 0xB6
   DEFB $05                ; Minimum x-coordinate: 5
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x1B) is used in On a Branch Over the Drive,
@@ -4037,7 +4038,7 @@ ENTITY27:
   DEFB $90                ; Initial pixel y-coordinate: 72
   DEFB $FC                ; Initial pixel y-coordinate increment: -2 (moving
                           ; up)
-  DEFB $B2                ; Page containing the sprite graphic data: 0xB2
+  DEFB GUARDIANS/$100+$07 ; Page containing the sprite graphic data: 0xB2
   DEFB $80                ; Minimum pixel y-coordinate: 64
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x1C) is used in Under the Drive and West
@@ -4053,7 +4054,7 @@ ENTITY28:
                           ; entity specification in the room definition)
   DEFB $B0                ; Pixel y-coordinate: 88
   DEFB $00                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $0C                ; Minimum x-coordinate: 12
   DEFB $1D                ; Maximum x-coordinate: 29
 ; The following entity definition (0x1D) is used in On top of the house, Under
@@ -4070,7 +4071,7 @@ ENTITY29:
   DEFB $30                ; Initial pixel y-coordinate: 24
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $B2                ; Page containing the sprite graphic data: 0xB2
+  DEFB GUARDIANS/$100+$07 ; Page containing the sprite graphic data: 0xB2
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $80                ; Maximum pixel y-coordinate: 64
 ; The following entity definition (0x1E) is used in Tree Root and West Bedroom.
@@ -4086,7 +4087,7 @@ ENTITY30:
   DEFB $40                ; Initial pixel y-coordinate: 32
   DEFB $FC                ; Initial pixel y-coordinate increment: -2 (moving
                           ; up)
-  DEFB $AD                ; Page containing the sprite graphic data: 0xAD
+  DEFB GUARDIANS/$100+$02 ; Page containing the sprite graphic data: 0xAD
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $80                ; Maximum pixel y-coordinate: 64
 ; The following entity definition (0x1F) is used in Tree Root.
@@ -4102,7 +4103,7 @@ ENTITY31:
   DEFB $90                ; Initial pixel y-coordinate: 72
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $B7                ; Page containing the sprite graphic data: 0xB7
+  DEFB GUARDIANS/$100+$0C ; Page containing the sprite graphic data: 0xB7
   DEFB $40                ; Minimum pixel y-coordinate: 32
   DEFB $A0                ; Maximum pixel y-coordinate: 80
 ; The following entity definition (0x20) is used in Under the MegaTree.
@@ -4117,7 +4118,7 @@ ENTITY32:
                           ; entity specification in the room definition)
   DEFB $D0                ; Pixel y-coordinate: 104
   DEFB $01                ; Unused
-  DEFB $B8                ; Page containing the sprite graphic data: 0xB8
+  DEFB GUARDIANS/$100+$0D ; Page containing the sprite graphic data: 0xB8
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x21) is used in Ballroom West.
@@ -4132,7 +4133,7 @@ ENTITY33:
                           ; entity specification in the room definition)
   DEFB $B0                ; Pixel y-coordinate: 88
   DEFB $00                ; Unused
-  DEFB $B8                ; Page containing the sprite graphic data: 0xB8
+  DEFB GUARDIANS/$100+$0D ; Page containing the sprite graphic data: 0xB8
   DEFB $10                ; Minimum x-coordinate: 16
   DEFB $1A                ; Maximum x-coordinate: 26
 ; The following entity definition (0x22) is used in On the Roof.
@@ -4147,7 +4148,7 @@ ENTITY34:
                           ; entity specification in the room definition)
   DEFB $D0                ; Pixel y-coordinate: 104
   DEFB $01                ; Unused
-  DEFB $B8                ; Page containing the sprite graphic data: 0xB8
+  DEFB GUARDIANS/$100+$0D ; Page containing the sprite graphic data: 0xB8
   DEFB $0E                ; Minimum x-coordinate: 14
   DEFB $18                ; Maximum x-coordinate: 24
 ; The following entity definition (0x23) is used in Tree Root.
@@ -4162,7 +4163,7 @@ ENTITY35:
                           ; entity specification in the room definition)
   DEFB $90                ; Pixel y-coordinate: 72
   DEFB $00                ; Unused
-  DEFB $B8                ; Page containing the sprite graphic data: 0xB8
+  DEFB GUARDIANS/$100+$0D ; Page containing the sprite graphic data: 0xB8
   DEFB $0F                ; Minimum x-coordinate: 15
   DEFB $17                ; Maximum x-coordinate: 23
 ; The following entity definition (0x24) is used in The Drive, Top Landing and
@@ -4178,7 +4179,7 @@ ENTITY36:
                           ; entity specification in the room definition)
   DEFB $D0                ; Pixel y-coordinate: 104
   DEFB $00                ; Unused
-  DEFB $AF                ; Page containing the sprite graphic data: 0xAF
+  DEFB GUARDIANS/$100+$04 ; Page containing the sprite graphic data: 0xAF
   DEFB $0A                ; Minimum x-coordinate: 10
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x25) is used in Priests' Hole.
@@ -4193,7 +4194,7 @@ ENTITY37:
                           ; entity specification in the room definition)
   DEFB $A0                ; Pixel y-coordinate: 80
   DEFB $00                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $08                ; Minimum x-coordinate: 8
   DEFB $18                ; Maximum x-coordinate: 24
 ; The following entity definition (0x26) is used in Halfway up the East Wall.
@@ -4208,7 +4209,7 @@ ENTITY38:
                           ; entity specification in the room definition)
   DEFB $60                ; Pixel y-coordinate: 48
   DEFB $00                ; Unused
-  DEFB $AE                ; Page containing the sprite graphic data: 0xAE
+  DEFB GUARDIANS/$100+$03 ; Page containing the sprite graphic data: 0xAE
   DEFB $02                ; Minimum x-coordinate: 2
   DEFB $07                ; Maximum x-coordinate: 7
 ; The following entity definition (0x27) is used in Cuckoo's Nest and Under the
@@ -4224,7 +4225,7 @@ ENTITY39:
                           ; entity specification in the room definition)
   DEFB $80                ; Pixel y-coordinate: 64
   DEFB $00                ; Unused
-  DEFB $AF                ; Page containing the sprite graphic data: 0xAF
+  DEFB GUARDIANS/$100+$04 ; Page containing the sprite graphic data: 0xAF
   DEFB $0C                ; Minimum x-coordinate: 12
   DEFB $12                ; Maximum x-coordinate: 18
 ; The following entity definition (0x28) is used in Ballroom East, Ballroom
@@ -4241,7 +4242,7 @@ ENTITY40:
   DEFB $70                ; Initial pixel y-coordinate: 56
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $BA                ; Page containing the sprite graphic data: 0xBA
+  DEFB GUARDIANS/$100+$0F ; Page containing the sprite graphic data: 0xBA
   DEFB $60                ; Minimum pixel y-coordinate: 48
   DEFB $C0                ; Maximum pixel y-coordinate: 96
 ; The following entity definition (0x29) is used in Ballroom East.
@@ -4257,7 +4258,7 @@ ENTITY41:
   DEFB $96                ; Initial pixel y-coordinate: 75
   DEFB $02                ; Initial pixel y-coordinate increment: 1 (moving
                           ; down)
-  DEFB $BA                ; Page containing the sprite graphic data: 0xBA
+  DEFB GUARDIANS/$100+$0F ; Page containing the sprite graphic data: 0xBA
   DEFB $90                ; Minimum pixel y-coordinate: 72
   DEFB $C0                ; Maximum pixel y-coordinate: 96
 ; The following entity definition (0x2A) is used in Under the MegaTree,
@@ -4274,7 +4275,7 @@ ENTITY42:
   DEFB $90                ; Initial pixel y-coordinate: 72
   DEFB $FA                ; Initial pixel y-coordinate increment: -3 (moving
                           ; up)
-  DEFB $BA                ; Page containing the sprite graphic data: 0xBA
+  DEFB GUARDIANS/$100+$0F ; Page containing the sprite graphic data: 0xBA
   DEFB $60                ; Minimum pixel y-coordinate: 48
   DEFB $AE                ; Maximum pixel y-coordinate: 87
 ; The following entity definition (0x2B) is not used.
@@ -4290,7 +4291,7 @@ ENTITY43:
   DEFB $B0                ; Initial pixel y-coordinate: 88
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $BA                ; Page containing the sprite graphic data: 0xBA
+  DEFB GUARDIANS/$100+$0F ; Page containing the sprite graphic data: 0xBA
   DEFB $90                ; Minimum pixel y-coordinate: 72
   DEFB $B8                ; Maximum pixel y-coordinate: 92
 ; The following entity definition (0x2C) is used in The Off Licence and Inside
@@ -4307,7 +4308,7 @@ ENTITY44:
   DEFB $40                ; Initial pixel y-coordinate: 32
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $BA                ; Page containing the sprite graphic data: 0xBA
+  DEFB GUARDIANS/$100+$0F ; Page containing the sprite graphic data: 0xBA
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x2D) is used in Out on a limb and East Wall
@@ -4324,7 +4325,7 @@ ENTITY45:
   DEFB $B0                ; Initial pixel y-coordinate: 88
   DEFB $08                ; Initial pixel y-coordinate increment: 4 (moving
                           ; down)
-  DEFB $BA                ; Page containing the sprite graphic data: 0xBA
+  DEFB GUARDIANS/$100+$0F ; Page containing the sprite graphic data: 0xBA
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x2E) is used in Tree Top.
@@ -4339,7 +4340,7 @@ ENTITY46:
                           ; entity specification in the room definition)
   DEFB $A0                ; Pixel y-coordinate: 80
   DEFB $00                ; Unused
-  DEFB $BB                ; Page containing the sprite graphic data: 0xBB
+  DEFB GUARDIANS/$100+$10 ; Page containing the sprite graphic data: 0xBB
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $13                ; Maximum x-coordinate: 19
 ; The following entity definition (0x2F) is used in Inside the MegaTrunk.
@@ -4354,7 +4355,7 @@ ENTITY47:
                           ; entity specification in the room definition)
   DEFB $30                ; Pixel y-coordinate: 24
   DEFB $00                ; Unused
-  DEFB $BB                ; Page containing the sprite graphic data: 0xBB
+  DEFB GUARDIANS/$100+$10 ; Page containing the sprite graphic data: 0xBB
   DEFB $11                ; Minimum x-coordinate: 17
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x30) is used in The Kitchen and West of
@@ -4371,7 +4372,7 @@ ENTITY48:
   DEFB $40                ; Initial pixel y-coordinate: 32
   DEFB $06                ; Initial pixel y-coordinate increment: 3 (moving
                           ; down)
-  DEFB $B7                ; Page containing the sprite graphic data: 0xB7
+  DEFB GUARDIANS/$100+$0C ; Page containing the sprite graphic data: 0xB7
   DEFB $10                ; Minimum pixel y-coordinate: 8
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x31) is used in The Kitchen and West of
@@ -4388,7 +4389,7 @@ ENTITY49:
   DEFB $C0                ; Initial pixel y-coordinate: 96
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $B7                ; Page containing the sprite graphic data: 0xB7
+  DEFB GUARDIANS/$100+$0C ; Page containing the sprite graphic data: 0xB7
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x32) is used in The Kitchen and West of
@@ -4405,7 +4406,7 @@ ENTITY50:
   DEFB $80                ; Initial pixel y-coordinate: 64
   DEFB $F8                ; Initial pixel y-coordinate increment: -4 (moving
                           ; up)
-  DEFB $B7                ; Page containing the sprite graphic data: 0xB7
+  DEFB GUARDIANS/$100+$0C ; Page containing the sprite graphic data: 0xB7
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x33) is used in West Bedroom and Above the
@@ -4422,7 +4423,7 @@ ENTITY51:
   DEFB $30                ; Initial pixel y-coordinate: 24
   DEFB $02                ; Initial pixel y-coordinate increment: 1 (moving
                           ; down)
-  DEFB $B7                ; Page containing the sprite graphic data: 0xB7
+  DEFB GUARDIANS/$100+$0C ; Page containing the sprite graphic data: 0xB7
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $A0                ; Maximum pixel y-coordinate: 80
 ; The following entity definition (0x34) is used in The Wine Cellar, Tool  Shed
@@ -4438,7 +4439,7 @@ ENTITY52:
                           ; entity specification in the room definition)
   DEFB $D0                ; Pixel y-coordinate: 104
   DEFB $00                ; Unused
-  DEFB $B5                ; Page containing the sprite graphic data: 0xB5
+  DEFB GUARDIANS/$100+$0A ; Page containing the sprite graphic data: 0xB5
   DEFB $07                ; Minimum x-coordinate: 7
   DEFB $16                ; Maximum x-coordinate: 22
 ; The following entity definition (0x35) is used in At the Foot of the MegaTree
@@ -4454,7 +4455,7 @@ ENTITY53:
                           ; entity specification in the room definition)
   DEFB $D0                ; Pixel y-coordinate: 104
   DEFB $00                ; Unused
-  DEFB $B5                ; Page containing the sprite graphic data: 0xB5
+  DEFB GUARDIANS/$100+$0A ; Page containing the sprite graphic data: 0xB5
   DEFB $04                ; Minimum x-coordinate: 4
   DEFB $0E                ; Maximum x-coordinate: 14
 ; The following entity definition (0x36) is used in Cold Store.
@@ -4469,7 +4470,7 @@ ENTITY54:
                           ; entity specification in the room definition)
   DEFB $D0                ; Pixel y-coordinate: 104
   DEFB $00                ; Unused
-  DEFB $BD                ; Page containing the sprite graphic data: 0xBD
+  DEFB GUARDIANS/$100+$12 ; Page containing the sprite graphic data: 0xBD
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $18                ; Maximum x-coordinate: 24
 ; The following entity definition (0x37) is used in Cold Store and Under the
@@ -4485,7 +4486,7 @@ ENTITY55:
                           ; entity specification in the room definition)
   DEFB $90                ; Pixel y-coordinate: 72
   DEFB $00                ; Unused
-  DEFB $BB                ; Page containing the sprite graphic data: 0xBB
+  DEFB GUARDIANS/$100+$10 ; Page containing the sprite graphic data: 0xBB
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $05                ; Maximum x-coordinate: 5
 ; The following entity definition (0x38) is used in Cold Store.
@@ -4500,7 +4501,7 @@ ENTITY56:
                           ; entity specification in the room definition)
   DEFB $60                ; Pixel y-coordinate: 48
   DEFB $00                ; Unused
-  DEFB $BD                ; Page containing the sprite graphic data: 0xBD
+  DEFB GUARDIANS/$100+$12 ; Page containing the sprite graphic data: 0xBD
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $06                ; Maximum x-coordinate: 6
 ; The following entity definition (0x39) is used in Cold Store.
@@ -4515,7 +4516,7 @@ ENTITY57:
                           ; entity specification in the room definition)
   DEFB $30                ; Pixel y-coordinate: 24
   DEFB $00                ; Unused
-  DEFB $BB                ; Page containing the sprite graphic data: 0xBB
+  DEFB GUARDIANS/$100+$10 ; Page containing the sprite graphic data: 0xBB
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $09                ; Maximum x-coordinate: 9
 ; The following entity definition (0x3A) is used in Top Landing.
@@ -4531,7 +4532,7 @@ ENTITY58:
   DEFB $40                ; Initial pixel y-coordinate: 32
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $AD                ; Page containing the sprite graphic data: 0xAD
+  DEFB GUARDIANS/$100+$02 ; Page containing the sprite graphic data: 0xAD
   DEFB $20                ; Minimum pixel y-coordinate: 16
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x3B) is used in The Bathroom.
@@ -4546,7 +4547,7 @@ ENTITY59:
                           ; entity specification in the room definition)
   DEFB $30                ; Pixel y-coordinate: 24
   DEFB $00                ; Unused
-  DEFB $B9                ; Page containing the sprite graphic data: 0xB9
+  DEFB GUARDIANS/$100+$0E ; Page containing the sprite graphic data: 0xB9
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $1B                ; Maximum x-coordinate: 27
 ; The following entity definition (0x3C) is used in Cuckoo's Nest, On a Branch
@@ -4578,7 +4579,7 @@ ENTITY61:
                           ; entity specification in the room definition)
   DEFB $50                ; Pixel y-coordinate: 40
   DEFB $00                ; Unused
-  DEFB $AD                ; Page containing the sprite graphic data: 0xAD
+  DEFB GUARDIANS/$100+$02 ; Page containing the sprite graphic data: 0xAD
   DEFB $10                ; Minimum x-coordinate: 16
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x3E) is used in On a Branch Over the Drive.
@@ -4594,7 +4595,7 @@ ENTITY62:
   DEFB $60                ; Initial pixel y-coordinate: 48
   DEFB $02                ; Initial pixel y-coordinate increment: 1 (moving
                           ; down)
-  DEFB $B9                ; Page containing the sprite graphic data: 0xB9
+  DEFB GUARDIANS/$100+$0E ; Page containing the sprite graphic data: 0xB9
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $70                ; Maximum pixel y-coordinate: 56
 ; The following entity definition (0x3F) is not used.
@@ -4611,7 +4612,7 @@ ENTITY64:
                           ; entity specification in the room definition)
   DEFB $30                ; Pixel y-coordinate: 24
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $1B                ; Maximum x-coordinate: 27
 ; The following entity definition (0x41) is used in The Wine Cellar.
@@ -4626,7 +4627,7 @@ ENTITY65:
                           ; entity specification in the room definition)
   DEFB $60                ; Pixel y-coordinate: 48
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $04                ; Minimum x-coordinate: 4
   DEFB $1B                ; Maximum x-coordinate: 27
 ; The following entity definition (0x42) is used in The Wine Cellar.
@@ -4641,7 +4642,7 @@ ENTITY66:
                           ; entity specification in the room definition)
   DEFB $90                ; Pixel y-coordinate: 72
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $02                ; Minimum x-coordinate: 2
   DEFB $1B                ; Maximum x-coordinate: 27
 ; The following entity definition (0x43) is used in First Landing.
@@ -4656,7 +4657,7 @@ ENTITY67:
                           ; entity specification in the room definition)
   DEFB $C0                ; Pixel y-coordinate: 96
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $18                ; Minimum x-coordinate: 24
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x44) is used in Under the Drive.
@@ -4671,7 +4672,7 @@ ENTITY68:
                           ; entity specification in the room definition)
   DEFB $80                ; Pixel y-coordinate: 64
   DEFB $00                ; Unused
-  DEFB $AE                ; Page containing the sprite graphic data: 0xAE
+  DEFB GUARDIANS/$100+$03 ; Page containing the sprite graphic data: 0xAE
   DEFB $15                ; Minimum x-coordinate: 21
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x45) is used in The Hall, Tree Top, I'm
@@ -4702,7 +4703,7 @@ ENTITY70:
   DEFB $40                ; Initial pixel y-coordinate: 32
   DEFB $FC                ; Initial pixel y-coordinate increment: -2 (moving
                           ; up)
-  DEFB $9C                ; Page containing the sprite graphic data: 0x9C
+  DEFB MARIA0/$100        ; Page containing the sprite graphic data: 0x9C
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $A0                ; Maximum pixel y-coordinate: 80
 ; The following entity definition (0x47) is used in The Nightmare Room.
@@ -4718,7 +4719,7 @@ ENTITY71:
   DEFB $20                ; Initial pixel y-coordinate: 16
   DEFB $02                ; Initial pixel y-coordinate increment: 1 (moving
                           ; down)
-  DEFB $9C                ; Page containing the sprite graphic data: 0x9C
+  DEFB MARIA0/$100        ; Page containing the sprite graphic data: 0x9C
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x48) is used in The Nightmare Room.
@@ -4733,7 +4734,7 @@ ENTITY72:
   DEFB $90                ; Initial pixel y-coordinate: 72
   DEFB $06                ; Initial pixel y-coordinate increment: 3 (moving
                           ; down)
-  DEFB $9C                ; Page containing the sprite graphic data: 0x9C
+  DEFB MARIA0/$100        ; Page containing the sprite graphic data: 0x9C
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $C0                ; Maximum pixel y-coordinate: 96
 ; The following entity definition (0x49) is used in The Nightmare Room.
@@ -4749,7 +4750,7 @@ ENTITY73:
   DEFB $80                ; Initial pixel y-coordinate: 64
   DEFB $F8                ; Initial pixel y-coordinate increment: -4 (moving
                           ; up)
-  DEFB $9C                ; Page containing the sprite graphic data: 0x9C
+  DEFB MARIA0/$100        ; Page containing the sprite graphic data: 0x9C
   DEFB $10                ; Minimum pixel y-coordinate: 8
   DEFB $D0                ; Maximum pixel y-coordinate: 104
 ; The following entity definition (0x4A) is used in The Forgotten Abbey.
@@ -4764,7 +4765,7 @@ ENTITY74:
                           ; entity specification in the room definition)
   DEFB $50                ; Pixel y-coordinate: 40
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $04                ; Minimum x-coordinate: 4
   DEFB $14                ; Maximum x-coordinate: 20
 ; The following entity definition (0x4B) is used in The Forgotten Abbey.
@@ -4779,7 +4780,7 @@ ENTITY75:
                           ; entity specification in the room definition)
   DEFB $50                ; Pixel y-coordinate: 40
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $0C                ; Minimum x-coordinate: 12
   DEFB $1C                ; Maximum x-coordinate: 28
 ; The following entity definition (0x4C) is used in The Forgotten Abbey.
@@ -4794,7 +4795,7 @@ ENTITY76:
                           ; entity specification in the room definition)
   DEFB $90                ; Pixel y-coordinate: 72
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $09                ; Minimum x-coordinate: 9
   DEFB $14                ; Maximum x-coordinate: 20
 ; The following entity definition (0x4D) is used in The Forgotten Abbey.
@@ -4809,7 +4810,7 @@ ENTITY77:
                           ; entity specification in the room definition)
   DEFB $90                ; Pixel y-coordinate: 72
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $16                ; Minimum x-coordinate: 22
   DEFB $1B                ; Maximum x-coordinate: 27
 ; The following entity definition (0x4E) is used in The Forgotten Abbey and
@@ -4825,7 +4826,7 @@ ENTITY78:
                           ; entity specification in the room definition)
   DEFB $D0                ; Pixel y-coordinate: 104
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $05                ; Minimum x-coordinate: 5
   DEFB $0C                ; Maximum x-coordinate: 12
 ; The following entity definition (0x4F) is used in The Forgotten Abbey.
@@ -4840,7 +4841,7 @@ ENTITY79:
                           ; entity specification in the room definition)
   DEFB $D0                ; Pixel y-coordinate: 104
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $0B                ; Minimum x-coordinate: 11
   DEFB $12                ; Maximum x-coordinate: 18
 ; The following entity definition (0x50) is used in The Forgotten Abbey.
@@ -4855,7 +4856,7 @@ ENTITY80:
                           ; entity specification in the room definition)
   DEFB $D0                ; Pixel y-coordinate: 104
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $10                ; Minimum x-coordinate: 16
   DEFB $17                ; Maximum x-coordinate: 23
 ; The following entity definition (0x51) is used in The Forgotten Abbey.
@@ -4870,7 +4871,7 @@ ENTITY81:
                           ; entity specification in the room definition)
   DEFB $D0                ; Pixel y-coordinate: 104
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $17                ; Minimum x-coordinate: 23
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x52) is used in The Attic.
@@ -4886,7 +4887,7 @@ ENTITY82:
   DEFB $84                ; Initial pixel y-coordinate: 66
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $B0                ; Page containing the sprite graphic data: 0xB0
+  DEFB GUARDIANS/$100+$05 ; Page containing the sprite graphic data: 0xB0
   DEFB $70                ; Minimum pixel y-coordinate: 56
   DEFB $B0                ; Maximum pixel y-coordinate: 88
 ; The following entity definition (0x53) is used in The Attic.
@@ -4902,7 +4903,7 @@ ENTITY83:
   DEFB $8C                ; Initial pixel y-coordinate: 70
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $B0                ; Page containing the sprite graphic data: 0xB0
+  DEFB GUARDIANS/$100+$05 ; Page containing the sprite graphic data: 0xB0
   DEFB $70                ; Minimum pixel y-coordinate: 56
   DEFB $B0                ; Maximum pixel y-coordinate: 88
 ; The following entity definition (0x54) is used in The Attic.
@@ -4918,7 +4919,7 @@ ENTITY84:
   DEFB $94                ; Initial pixel y-coordinate: 74
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $B0                ; Page containing the sprite graphic data: 0xB0
+  DEFB GUARDIANS/$100+$05 ; Page containing the sprite graphic data: 0xB0
   DEFB $70                ; Minimum pixel y-coordinate: 56
   DEFB $B0                ; Maximum pixel y-coordinate: 88
 ; The following entity definition (0x55) is used in The Attic.
@@ -4934,7 +4935,7 @@ ENTITY85:
   DEFB $9C                ; Initial pixel y-coordinate: 78
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $B0                ; Page containing the sprite graphic data: 0xB0
+  DEFB GUARDIANS/$100+$05 ; Page containing the sprite graphic data: 0xB0
   DEFB $70                ; Minimum pixel y-coordinate: 56
   DEFB $B0                ; Maximum pixel y-coordinate: 88
 ; The following entity definition (0x56) is used in The Attic.
@@ -4950,7 +4951,7 @@ ENTITY86:
   DEFB $A4                ; Initial pixel y-coordinate: 82
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $B0                ; Page containing the sprite graphic data: 0xB0
+  DEFB GUARDIANS/$100+$05 ; Page containing the sprite graphic data: 0xB0
   DEFB $70                ; Minimum pixel y-coordinate: 56
   DEFB $B0                ; Maximum pixel y-coordinate: 88
 ; The following entity definition (0x57) is used in The Attic.
@@ -4966,7 +4967,7 @@ ENTITY87:
   DEFB $AC                ; Initial pixel y-coordinate: 86
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $B0                ; Page containing the sprite graphic data: 0xB0
+  DEFB GUARDIANS/$100+$05 ; Page containing the sprite graphic data: 0xB0
   DEFB $70                ; Minimum pixel y-coordinate: 56
   DEFB $B0                ; Maximum pixel y-coordinate: 88
 ; The following entity definition (0x58) is used in Out on a limb and The
@@ -4982,7 +4983,7 @@ ENTITY88:
                           ; entity specification in the room definition)
   DEFB $A0                ; Pixel y-coordinate: 80
   DEFB $00                ; Unused
-  DEFB $B5                ; Page containing the sprite graphic data: 0xB5
+  DEFB GUARDIANS/$100+$0A ; Page containing the sprite graphic data: 0xB5
   DEFB $13                ; Minimum x-coordinate: 19
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x59) is used in The Hall and West  Wing.
@@ -4998,7 +4999,7 @@ ENTITY89:
   DEFB $60                ; Initial pixel y-coordinate: 48
   DEFB $00                ; Initial pixel y-coordinate increment: 0 (not
                           ; moving)
-  DEFB $B0                ; Page containing the sprite graphic data: 0xB0
+  DEFB GUARDIANS/$100+$05 ; Page containing the sprite graphic data: 0xB0
   DEFB $50                ; Minimum pixel y-coordinate: 40
   DEFB $70                ; Maximum pixel y-coordinate: 56
 ; The following entity definition (0x5A) is used in To the Kitchens    Main
@@ -5014,7 +5015,7 @@ ENTITY90:
                           ; entity specification in the room definition)
   DEFB $30                ; Pixel y-coordinate: 24
   DEFB $00                ; Unused
-  DEFB $AE                ; Page containing the sprite graphic data: 0xAE
+  DEFB GUARDIANS/$100+$03 ; Page containing the sprite graphic data: 0xAE
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $0B                ; Maximum x-coordinate: 11
 ; The following entity definition (0x5B) is used in To the Kitchens    Main
@@ -5030,7 +5031,7 @@ ENTITY91:
                           ; entity specification in the room definition)
   DEFB $30                ; Pixel y-coordinate: 24
   DEFB $00                ; Unused
-  DEFB $BE                ; Page containing the sprite graphic data: 0xBE
+  DEFB GUARDIANS/$100+$13 ; Page containing the sprite graphic data: 0xBE
   DEFB $0D                ; Minimum x-coordinate: 13
   DEFB $15                ; Maximum x-coordinate: 21
 ; The following entity definition (0x5C) is used in To the Kitchens    Main
@@ -5046,7 +5047,7 @@ ENTITY92:
                           ; entity specification in the room definition)
   DEFB $60                ; Pixel y-coordinate: 48
   DEFB $00                ; Unused
-  DEFB $B7                ; Page containing the sprite graphic data: 0xB7
+  DEFB GUARDIANS/$100+$0C ; Page containing the sprite graphic data: 0xB7
   DEFB $0C                ; Minimum x-coordinate: 12
   DEFB $18                ; Maximum x-coordinate: 24
 ; The following entity definition (0x5D) is used in To the Kitchens    Main
@@ -5062,7 +5063,7 @@ ENTITY93:
                           ; entity specification in the room definition)
   DEFB $90                ; Pixel y-coordinate: 72
   DEFB $00                ; Unused
-  DEFB $B9                ; Page containing the sprite graphic data: 0xB9
+  DEFB GUARDIANS/$100+$0E ; Page containing the sprite graphic data: 0xB9
   DEFB $02                ; Minimum x-coordinate: 2
   DEFB $06                ; Maximum x-coordinate: 6
 ; The following entity definition (0x5E) is used in To the Kitchens    Main
@@ -5078,7 +5079,7 @@ ENTITY94:
                           ; entity specification in the room definition)
   DEFB $C0                ; Pixel y-coordinate: 96
   DEFB $00                ; Unused
-  DEFB $AF                ; Page containing the sprite graphic data: 0xAF
+  DEFB GUARDIANS/$100+$04 ; Page containing the sprite graphic data: 0xAF
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x5F) is used in The Hall and To the
@@ -5094,7 +5095,7 @@ ENTITY95:
                           ; entity specification in the room definition)
   DEFB $A0                ; Pixel y-coordinate: 80
   DEFB $00                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $09                ; Minimum x-coordinate: 9
   DEFB $11                ; Maximum x-coordinate: 17
 ; The following entity definition (0x60) is used in East Wall Base.
@@ -5110,7 +5111,7 @@ ENTITY96:
   DEFB $90                ; Initial pixel y-coordinate: 72
   DEFB $FC                ; Initial pixel y-coordinate increment: -2 (moving
                           ; up)
-  DEFB $AC                ; Page containing the sprite graphic data: 0xAC
+  DEFB GUARDIANS/$100+$01 ; Page containing the sprite graphic data: 0xAC
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $C0                ; Maximum pixel y-coordinate: 96
 ; The following entity definition (0x61) is used in Orangery and West  Wing.
@@ -5126,7 +5127,7 @@ ENTITY97:
   DEFB $40                ; Initial pixel y-coordinate: 32
   DEFB $08                ; Initial pixel y-coordinate increment: 4 (moving
                           ; down)
-  DEFB $AC                ; Page containing the sprite graphic data: 0xAC
+  DEFB GUARDIANS/$100+$01 ; Page containing the sprite graphic data: 0xAC
   DEFB $00                ; Minimum pixel y-coordinate: 0
   DEFB $C0                ; Maximum pixel y-coordinate: 96
 ; The following entity definition (0x62) is used in Tool  Shed.
@@ -5141,7 +5142,7 @@ ENTITY98:
                           ; entity specification in the room definition)
   DEFB $90                ; Pixel y-coordinate: 72
   DEFB $00                ; Unused
-  DEFB $AF                ; Page containing the sprite graphic data: 0xAF
+  DEFB GUARDIANS/$100+$04 ; Page containing the sprite graphic data: 0xAF
   DEFB $07                ; Minimum x-coordinate: 7
   DEFB $14                ; Maximum x-coordinate: 20
 ; The following entity definition (0x63) is used in Tool  Shed.
@@ -5156,7 +5157,7 @@ ENTITY99:
                           ; entity specification in the room definition)
   DEFB $60                ; Pixel y-coordinate: 48
   DEFB $00                ; Unused
-  DEFB $AD                ; Page containing the sprite graphic data: 0xAD
+  DEFB GUARDIANS/$100+$02 ; Page containing the sprite graphic data: 0xAD
   DEFB $07                ; Minimum x-coordinate: 7
   DEFB $11                ; Maximum x-coordinate: 17
 ; The following entity definition (0x64) is used in The Chapel and The Banyan
@@ -5173,7 +5174,7 @@ ENTITY100:
   DEFB $80                ; Initial pixel y-coordinate: 64
   DEFB $FE                ; Initial pixel y-coordinate increment: -1 (moving
                           ; up)
-  DEFB $AC                ; Page containing the sprite graphic data: 0xAC
+  DEFB GUARDIANS/$100+$01 ; Page containing the sprite graphic data: 0xAC
   DEFB $70                ; Minimum pixel y-coordinate: 56
   DEFB $A0                ; Maximum pixel y-coordinate: 80
 ; The following entity definition (0x65) is used in The Banyan Tree and A bit
@@ -5190,7 +5191,7 @@ ENTITY101:
   DEFB $60                ; Initial pixel y-coordinate: 48
   DEFB $04                ; Initial pixel y-coordinate increment: 2 (moving
                           ; down)
-  DEFB $AB                ; Page containing the sprite graphic data: 0xAB
+  DEFB GUARDIANS/$100+$00 ; Page containing the sprite graphic data: 0xAB
   DEFB $50                ; Minimum pixel y-coordinate: 40
   DEFB $A0                ; Maximum pixel y-coordinate: 80
 ; The following entity definition (0x66) is used in The Chapel and The Banyan
@@ -5207,7 +5208,7 @@ ENTITY102:
   DEFB $98                ; Initial pixel y-coordinate: 76
   DEFB $02                ; Initial pixel y-coordinate increment: 1 (moving
                           ; down)
-  DEFB $AB                ; Page containing the sprite graphic data: 0xAB
+  DEFB GUARDIANS/$100+$00 ; Page containing the sprite graphic data: 0xAB
   DEFB $50                ; Minimum pixel y-coordinate: 40
   DEFB $A0                ; Maximum pixel y-coordinate: 80
 ; The following entity definition (0x67) is used in The Chapel.
@@ -5222,7 +5223,7 @@ ENTITY103:
                           ; entity specification in the room definition)
   DEFB $C0                ; Pixel y-coordinate: 96
   DEFB $00                ; Unused
-  DEFB $B4                ; Page containing the sprite graphic data: 0xB4
+  DEFB GUARDIANS/$100+$09 ; Page containing the sprite graphic data: 0xB4
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $0F                ; Maximum x-coordinate: 15
 ; The following entity definition (0x68) is used in A bit of tree and Nomen
@@ -5238,7 +5239,7 @@ ENTITY104:
                           ; entity specification in the room definition)
   DEFB $20                ; Pixel y-coordinate: 16
   DEFB $00                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $0A                ; Maximum x-coordinate: 10
 ; The following entity definition (0x69) is used in The Bow.
@@ -5253,7 +5254,7 @@ ENTITY105:
                           ; entity specification in the room definition)
   DEFB $30                ; Pixel y-coordinate: 24
   DEFB $00                ; Unused
-  DEFB $BE                ; Page containing the sprite graphic data: 0xBE
+  DEFB GUARDIANS/$100+$13 ; Page containing the sprite graphic data: 0xBE
   DEFB $16                ; Minimum x-coordinate: 22
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x6A) is used in Conservatory Roof.
@@ -5268,7 +5269,7 @@ ENTITY106:
                           ; entity specification in the room definition)
   DEFB $B0                ; Pixel y-coordinate: 88
   DEFB $00                ; Unused
-  DEFB $AE                ; Page containing the sprite graphic data: 0xAE
+  DEFB GUARDIANS/$100+$03 ; Page containing the sprite graphic data: 0xAE
   DEFB $11                ; Minimum x-coordinate: 17
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x6B) is used in Nomen Luni.
@@ -5283,7 +5284,7 @@ ENTITY107:
                           ; entity specification in the room definition)
   DEFB $30                ; Pixel y-coordinate: 24
   DEFB $00                ; Unused
-  DEFB $BE                ; Page containing the sprite graphic data: 0xBE
+  DEFB GUARDIANS/$100+$13 ; Page containing the sprite graphic data: 0xBE
   DEFB $12                ; Minimum x-coordinate: 18
   DEFB $16                ; Maximum x-coordinate: 22
 ; The following entity definition (0x6C) is used in Watch Tower.
@@ -5298,7 +5299,7 @@ ENTITY108:
                           ; entity specification in the room definition)
   DEFB $90                ; Pixel y-coordinate: 72
   DEFB $00                ; Unused
-  DEFB $BB                ; Page containing the sprite graphic data: 0xBB
+  DEFB GUARDIANS/$100+$10 ; Page containing the sprite graphic data: 0xBB
   DEFB $0B                ; Minimum x-coordinate: 11
   DEFB $12                ; Maximum x-coordinate: 18
 ; The following entity definition (0x6D) is used in Watch Tower.
@@ -5313,7 +5314,7 @@ ENTITY109:
                           ; entity specification in the room definition)
   DEFB $70                ; Pixel y-coordinate: 56
   DEFB $00                ; Unused
-  DEFB $BC                ; Page containing the sprite graphic data: 0xBC
+  DEFB GUARDIANS/$100+$11 ; Page containing the sprite graphic data: 0xBC
   DEFB $09                ; Minimum x-coordinate: 9
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x6E) is used in The Bow.
@@ -5328,7 +5329,7 @@ ENTITY110:
                           ; entity specification in the room definition)
   DEFB $D0                ; Pixel y-coordinate: 104
   DEFB $00                ; Unused
-  DEFB $AE                ; Page containing the sprite graphic data: 0xAE
+  DEFB GUARDIANS/$100+$03 ; Page containing the sprite graphic data: 0xAE
   DEFB $11                ; Minimum x-coordinate: 17
   DEFB $1E                ; Maximum x-coordinate: 30
 ; The following entity definition (0x6F) is used in Cuckoo's Nest.
@@ -5343,7 +5344,7 @@ ENTITY111:
                           ; entity specification in the room definition)
   DEFB $B0                ; Pixel y-coordinate: 88
   DEFB $00                ; Unused
-  DEFB $B5                ; Page containing the sprite graphic data: 0xB5
+  DEFB GUARDIANS/$100+$0A ; Page containing the sprite graphic data: 0xB5
   DEFB $00                ; Minimum x-coordinate: 0
   DEFB $0B                ; Maximum x-coordinate: 11
 ; The next 15 entity definitions (0x70-0x7E) are unused.
@@ -6008,6 +6009,7 @@ FLYINGPIG0:
 ; bit-pair (bits 7 and 6, 5 and 4, 3 and 2, or 1 and 0 of each byte) determines
 ; the type of tile (background, floor, wall or nasty) that will be drawn at the
 ; corresponding location.
+ROOMS:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; Room layout
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00
@@ -6037,12 +6039,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5F33              ; Location in the attribute buffer at 24064: (9,19)
+  DEFW ROOMATT+$133       ; Location in the attribute buffer at 24064: (9,19)
   DEFB $0C                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FD7              ; Location in the attribute buffer at 24064: (14,23)
+  DEFW ROOMATT+$1D7       ; Location in the attribute buffer at 24064: (14,23)
   DEFB $04                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $05                ; Border colour
@@ -6109,12 +6111,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5FEC              ; Location in the attribute buffer at 24064: (15,12)
+  DEFW ROOMATT+$1EC       ; Location in the attribute buffer at 24064: (15,12)
   DEFB $05                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FC7              ; Location in the attribute buffer at 24064: (14,7)
+  DEFW ROOMATT+$1C7       ; Location in the attribute buffer at 24064: (14,7)
   DEFB $03                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $04                ; Border colour
@@ -6181,12 +6183,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $06                ; Border colour
@@ -6253,12 +6255,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5F8F              ; Location in the attribute buffer at 24064: (12,15)
+  DEFW ROOMATT+$18F       ; Location in the attribute buffer at 24064: (12,15)
   DEFB $03                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -6326,12 +6328,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5FA0              ; Location in the attribute buffer at 24064: (13,0)
+  DEFW ROOMATT+$1A0       ; Location in the attribute buffer at 24064: (13,0)
   DEFB $02                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FC9              ; Location in the attribute buffer at 24064: (14,9)
+  DEFW ROOMATT+$1C9       ; Location in the attribute buffer at 24064: (14,9)
   DEFB $07                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $03                ; Border colour
@@ -6400,12 +6402,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5FBD              ; Location in the attribute buffer at 24064: (13,29)
+  DEFW ROOMATT+$1BD       ; Location in the attribute buffer at 24064: (13,29)
   DEFB $03                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5EE8              ; Location in the attribute buffer at 24064: (7,8)
+  DEFW ROOMATT+$0E8       ; Location in the attribute buffer at 24064: (7,8)
   DEFB $08                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -6473,12 +6475,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FC7              ; Location in the attribute buffer at 24064: (14,7)
+  DEFW ROOMATT+$1C7       ; Location in the attribute buffer at 24064: (14,7)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -6545,12 +6547,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5F8D              ; Location in the attribute buffer at 24064: (12,13)
+  DEFW ROOMATT+$18D       ; Location in the attribute buffer at 24064: (12,13)
   DEFB $02                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -6617,12 +6619,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5EFB              ; Location in the attribute buffer at 24064: (7,27)
+  DEFW ROOMATT+$0FB       ; Location in the attribute buffer at 24064: (7,27)
   DEFB $03                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $04                ; Border colour
@@ -6693,12 +6695,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5F4E              ; Location in the attribute buffer at 24064: (10,14)
+  DEFW ROOMATT+$14E       ; Location in the attribute buffer at 24064: (10,14)
   DEFB $04                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -6767,12 +6769,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FE2              ; Location in the attribute buffer at 24064: (15,2)
+  DEFW ROOMATT+$1E2       ; Location in the attribute buffer at 24064: (15,2)
   DEFB $02                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -6836,12 +6838,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FA5              ; Location in the attribute buffer at 24064: (13,5)
+  DEFW ROOMATT+$1A5       ; Location in the attribute buffer at 24064: (13,5)
   DEFB $06                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $04                ; Border colour
@@ -6911,12 +6913,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FCF              ; Location in the attribute buffer at 24064: (14,15)
+  DEFW ROOMATT+$1CF       ; Location in the attribute buffer at 24064: (14,15)
   DEFB $02                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $06                ; Border colour
@@ -6984,12 +6986,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $05                ; Border colour
@@ -7056,12 +7058,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5E98              ; Location in the attribute buffer at 24064: (4,24)
+  DEFW ROOMATT+$098       ; Location in the attribute buffer at 24064: (4,24)
   DEFB $04                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -7129,12 +7131,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $03                ; Border colour
@@ -7205,12 +7207,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5F24              ; Location in the attribute buffer at 24064: (9,4)
+  DEFW ROOMATT+$124       ; Location in the attribute buffer at 24064: (9,4)
   DEFB $01                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -7277,12 +7279,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5F2D              ; Location in the attribute buffer at 24064: (9,13)
+  DEFW ROOMATT+$12D       ; Location in the attribute buffer at 24064: (9,13)
   DEFB $05                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -7351,12 +7353,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5FEE              ; Location in the attribute buffer at 24064: (15,14)
+  DEFW ROOMATT+$1EE       ; Location in the attribute buffer at 24064: (15,14)
   DEFB $08                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -7421,12 +7423,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5EE4              ; Location in the attribute buffer at 24064: (7,4)
+  DEFW ROOMATT+$0E4       ; Location in the attribute buffer at 24064: (7,4)
   DEFB $1A                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FC4              ; Location in the attribute buffer at 24064: (14,4)
+  DEFW ROOMATT+$1C4       ; Location in the attribute buffer at 24064: (14,4)
   DEFB $02                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -7498,12 +7500,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -7572,12 +7574,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5FB0              ; Location in the attribute buffer at 24064: (13,16)
+  DEFW ROOMATT+$1B0       ; Location in the attribute buffer at 24064: (13,16)
   DEFB $0C                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FA3              ; Location in the attribute buffer at 24064: (13,3)
+  DEFW ROOMATT+$1A3       ; Location in the attribute buffer at 24064: (13,3)
   DEFB $04                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -7644,12 +7646,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5F0E              ; Location in the attribute buffer at 24064: (8,14)
+  DEFW ROOMATT+$10E       ; Location in the attribute buffer at 24064: (8,14)
   DEFB $02                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5F7F              ; Location in the attribute buffer at 24064: (11,31)
+  DEFW ROOMATT+$17F       ; Location in the attribute buffer at 24064: (11,31)
   DEFB $0C                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $04                ; Border colour
@@ -7719,12 +7721,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FD6              ; Location in the attribute buffer at 24064: (14,22)
+  DEFW ROOMATT+$1D6       ; Location in the attribute buffer at 24064: (14,22)
   DEFB $07                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $04                ; Border colour
@@ -7795,12 +7797,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5F96              ; Location in the attribute buffer at 24064: (12,22)
+  DEFW ROOMATT+$196       ; Location in the attribute buffer at 24064: (12,22)
   DEFB $05                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FC8              ; Location in the attribute buffer at 24064: (14,8)
+  DEFW ROOMATT+$1C8       ; Location in the attribute buffer at 24064: (14,8)
   DEFB $07                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -7868,12 +7870,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -7941,12 +7943,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $05                ; Border colour
@@ -8012,12 +8014,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FB1              ; Location in the attribute buffer at 24064: (13,17)
+  DEFW ROOMATT+$1B1       ; Location in the attribute buffer at 24064: (13,17)
   DEFB $07                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -8087,12 +8089,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FC9              ; Location in the attribute buffer at 24064: (14,9)
+  DEFW ROOMATT+$1C9       ; Location in the attribute buffer at 24064: (14,9)
   DEFB $0F                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $03                ; Border colour
@@ -8159,12 +8161,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5EFB              ; Location in the attribute buffer at 24064: (7,27)
+  DEFW ROOMATT+$0FB       ; Location in the attribute buffer at 24064: (7,27)
   DEFB $01                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FC9              ; Location in the attribute buffer at 24064: (14,9)
+  DEFW ROOMATT+$1C9       ; Location in the attribute buffer at 24064: (14,9)
   DEFB $03                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -8235,12 +8237,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5F64              ; Location in the attribute buffer at 24064: (11,4)
+  DEFW ROOMATT+$164       ; Location in the attribute buffer at 24064: (11,4)
   DEFB $08                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -8308,12 +8310,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FD9              ; Location in the attribute buffer at 24064: (14,25)
+  DEFW ROOMATT+$1D9       ; Location in the attribute buffer at 24064: (14,25)
   DEFB $03                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -8378,12 +8380,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5EEB              ; Location in the attribute buffer at 24064: (7,11)
+  DEFW ROOMATT+$0EB       ; Location in the attribute buffer at 24064: (7,11)
   DEFB $06                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -8448,12 +8450,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5FD4              ; Location in the attribute buffer at 24064: (14,20)
+  DEFW ROOMATT+$1D4       ; Location in the attribute buffer at 24064: (14,20)
   DEFB $04                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5F89              ; Location in the attribute buffer at 24064: (12,9)
+  DEFW ROOMATT+$189       ; Location in the attribute buffer at 24064: (12,9)
   DEFB $08                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -8518,12 +8520,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5F71              ; Location in the attribute buffer at 24064: (11,17)
+  DEFW ROOMATT+$171       ; Location in the attribute buffer at 24064: (11,17)
   DEFB $07                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -8590,12 +8592,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5F82              ; Location in the attribute buffer at 24064: (12,2)
+  DEFW ROOMATT+$182       ; Location in the attribute buffer at 24064: (12,2)
   DEFB $04                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FD2              ; Location in the attribute buffer at 24064: (14,18)
+  DEFW ROOMATT+$1D2       ; Location in the attribute buffer at 24064: (14,18)
   DEFB $02                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -8659,12 +8661,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5F34              ; Location in the attribute buffer at 24064: (9,20)
+  DEFW ROOMATT+$134       ; Location in the attribute buffer at 24064: (9,20)
   DEFB $02                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $05                ; Border colour
@@ -8731,12 +8733,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5F5C              ; Location in the attribute buffer at 24064: (10,28)
+  DEFW ROOMATT+$15C       ; Location in the attribute buffer at 24064: (10,28)
   DEFB $04                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FA0              ; Location in the attribute buffer at 24064: (13,0)
+  DEFW ROOMATT+$1A0       ; Location in the attribute buffer at 24064: (13,0)
   DEFB $0E                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $06                ; Border colour
@@ -8803,12 +8805,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -8876,12 +8878,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5F69              ; Location in the attribute buffer at 24064: (11,9)
+  DEFW ROOMATT+$169       ; Location in the attribute buffer at 24064: (11,9)
   DEFB $0E                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5F52              ; Location in the attribute buffer at 24064: (10,18)
+  DEFW ROOMATT+$152       ; Location in the attribute buffer at 24064: (10,18)
   DEFB $06                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -8946,12 +8948,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5FE0              ; Location in the attribute buffer at 24064: (15,0)
+  DEFW ROOMATT+$1E0       ; Location in the attribute buffer at 24064: (15,0)
   DEFB $20                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5F58              ; Location in the attribute buffer at 24064: (10,24)
+  DEFW ROOMATT+$158       ; Location in the attribute buffer at 24064: (10,24)
   DEFB $05                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -9017,12 +9019,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5F18              ; Location in the attribute buffer at 24064: (8,24)
+  DEFW ROOMATT+$118       ; Location in the attribute buffer at 24064: (8,24)
   DEFB $04                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -9095,12 +9097,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5ECC              ; Location in the attribute buffer at 24064: (6,12)
+  DEFW ROOMATT+$0CC       ; Location in the attribute buffer at 24064: (6,12)
   DEFB $14                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5EC4              ; Location in the attribute buffer at 24064: (6,4)
+  DEFW ROOMATT+$0C4       ; Location in the attribute buffer at 24064: (6,4)
   DEFB $07                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -9167,12 +9169,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5FBA              ; Location in the attribute buffer at 24064: (13,26)
+  DEFW ROOMATT+$1BA       ; Location in the attribute buffer at 24064: (13,26)
   DEFB $06                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FEC              ; Location in the attribute buffer at 24064: (15,12)
+  DEFW ROOMATT+$1EC       ; Location in the attribute buffer at 24064: (15,12)
   DEFB $09                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $05                ; Border colour
@@ -9238,12 +9240,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5F4C              ; Location in the attribute buffer at 24064: (10,12)
+  DEFW ROOMATT+$14C       ; Location in the attribute buffer at 24064: (10,12)
   DEFB $06                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $03                ; Border colour
@@ -9308,12 +9310,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5F52              ; Location in the attribute buffer at 24064: (10,18)
+  DEFW ROOMATT+$152       ; Location in the attribute buffer at 24064: (10,18)
   DEFB $0E                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FCD              ; Location in the attribute buffer at 24064: (14,13)
+  DEFW ROOMATT+$1CD       ; Location in the attribute buffer at 24064: (14,13)
   DEFB $0C                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $04                ; Border colour
@@ -9380,12 +9382,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5F40              ; Location in the attribute buffer at 24064: (10,0)
+  DEFW ROOMATT+$140       ; Location in the attribute buffer at 24064: (10,0)
   DEFB $0D                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FD8              ; Location in the attribute buffer at 24064: (14,24)
+  DEFW ROOMATT+$1D8       ; Location in the attribute buffer at 24064: (14,24)
   DEFB $06                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -9534,12 +9536,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FE9              ; Location in the attribute buffer at 24064: (15,9)
+  DEFW ROOMATT+$1E9       ; Location in the attribute buffer at 24064: (15,9)
   DEFB $05                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -9609,12 +9611,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5F9B              ; Location in the attribute buffer at 24064: (12,27)
+  DEFW ROOMATT+$19B       ; Location in the attribute buffer at 24064: (12,27)
   DEFB $05                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FD8              ; Location in the attribute buffer at 24064: (14,24)
+  DEFW ROOMATT+$1D8       ; Location in the attribute buffer at 24064: (14,24)
   DEFB $03                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $04                ; Border colour
@@ -9682,12 +9684,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5E8C              ; Location in the attribute buffer at 24064: (4,12)
+  DEFW ROOMATT+$08C       ; Location in the attribute buffer at 24064: (4,12)
   DEFB $08                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5F07              ; Location in the attribute buffer at 24064: (8,7)
+  DEFW ROOMATT+$107       ; Location in the attribute buffer at 24064: (8,7)
   DEFB $05                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $05                ; Border colour
@@ -9755,12 +9757,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5FE7              ; Location in the attribute buffer at 24064: (15,7)
+  DEFW ROOMATT+$1E7       ; Location in the attribute buffer at 24064: (15,7)
   DEFB $12                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5EE3              ; Location in the attribute buffer at 24064: (7,3)
+  DEFW ROOMATT+$0E3       ; Location in the attribute buffer at 24064: (7,3)
   DEFB $08                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $05                ; Border colour
@@ -9827,12 +9829,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FE2              ; Location in the attribute buffer at 24064: (15,2)
+  DEFW ROOMATT+$1E2       ; Location in the attribute buffer at 24064: (15,2)
   DEFB $10                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -9899,12 +9901,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5FF2              ; Location in the attribute buffer at 24064: (15,18)
+  DEFW ROOMATT+$1F2       ; Location in the attribute buffer at 24064: (15,18)
   DEFB $0E                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FE9              ; Location in the attribute buffer at 24064: (15,9)
+  DEFW ROOMATT+$1E9       ; Location in the attribute buffer at 24064: (15,9)
   DEFB $05                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -9968,12 +9970,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FF0              ; Location in the attribute buffer at 24064: (15,16)
+  DEFW ROOMATT+$1F0       ; Location in the attribute buffer at 24064: (15,16)
   DEFB $10                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -10040,12 +10042,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5E7A              ; Location in the attribute buffer at 24064: (3,26)
+  DEFW ROOMATT+$07A       ; Location in the attribute buffer at 24064: (3,26)
   DEFB $03                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no ramp in this room)
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $05                ; Border colour
@@ -10111,12 +10113,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FFC              ; Location in the attribute buffer at 24064: (15,28)
+  DEFW ROOMATT+$1FC       ; Location in the attribute buffer at 24064: (15,28)
   DEFB $04                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $01                ; Border colour
@@ -10183,12 +10185,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $0000              ; Location in the attribute buffer at 24064 (unused)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
   DEFB $00                ; Length: 0 (there is no conveyor in this room)
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FB1              ; Location in the attribute buffer at 24064: (13,17)
+  DEFW ROOMATT+$1B1       ; Location in the attribute buffer at 24064: (13,17)
   DEFB $08                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -10254,12 +10256,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5FE0              ; Location in the attribute buffer at 24064: (15,0)
+  DEFW ROOMATT+$1E0       ; Location in the attribute buffer at 24064: (15,0)
   DEFB $05                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $01                ; Direction (up to the right)
-  DEFW $5FC5              ; Location in the attribute buffer at 24064: (14,5)
+  DEFW ROOMATT+$1C5       ; Location in the attribute buffer at 24064: (14,5)
   DEFB $01                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $02                ; Border colour
@@ -10324,12 +10326,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $00                ; Direction (left)
-  DEFW $5FF5              ; Location in the attribute buffer at 24064: (15,21)
+  DEFW ROOMATT+$1F5       ; Location in the attribute buffer at 24064: (15,21)
   DEFB $0B                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5F2A              ; Location in the attribute buffer at 24064: (9,10)
+  DEFW ROOMATT+$12A       ; Location in the attribute buffer at 24064: (9,10)
   DEFB $05                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $05                ; Border colour
@@ -10395,12 +10397,12 @@ FLYINGPIG0:
 ; The next four bytes are copied to CONVDIR and specify the direction, location
 ; and length of the conveyor.
   DEFB $01                ; Direction (right)
-  DEFW $5FF1              ; Location in the attribute buffer at 24064: (15,17)
+  DEFW ROOMATT+$1F1       ; Location in the attribute buffer at 24064: (15,17)
   DEFB $0F                ; Length
 ; The next four bytes are copied to RAMPDIR and specify the direction, location
 ; and length of the ramp.
   DEFB $00                ; Direction (up to the left)
-  DEFW $5FD0              ; Location in the attribute buffer at 24064: (14,16)
+  DEFW ROOMATT+$1D0       ; Location in the attribute buffer at 24064: (14,16)
   DEFB $06                ; Length
 ; The next byte is copied to BORDER and specifies the border colour.
   DEFB $05                ; Border colour
