@@ -3297,188 +3297,7 @@ INTROSOUND_2:
   RET
 
 ; Unused
-  DEFS $0498
-
-; Screen buffer address lookup table
-;
-; Used by the routines at GAMEOVER, DRAWTHINGS and DRAWWILLY. The value of the
-; Nth entry (0<=N<=127) in this lookup table is the screen buffer address for
-; the point with pixel coordinates (x,y)=(0,N), with the origin (0,0) at the
-; top-left corner.
-SBUFADDRS:
-  DEFW FRAMEPIX+$000      ; y=0
-  DEFW FRAMEPIX+$100      ; y=1
-  DEFW FRAMEPIX+$200      ; y=2
-  DEFW FRAMEPIX+$300      ; y=3
-  DEFW FRAMEPIX+$400      ; y=4
-  DEFW FRAMEPIX+$500      ; y=5
-  DEFW FRAMEPIX+$600      ; y=6
-  DEFW FRAMEPIX+$700      ; y=7
-  DEFW FRAMEPIX+$020      ; y=8
-  DEFW FRAMEPIX+$120      ; y=9
-  DEFW FRAMEPIX+$220      ; y=10
-  DEFW FRAMEPIX+$320      ; y=11
-  DEFW FRAMEPIX+$420      ; y=12
-  DEFW FRAMEPIX+$520      ; y=13
-  DEFW FRAMEPIX+$620      ; y=14
-  DEFW FRAMEPIX+$720      ; y=15
-  DEFW FRAMEPIX+$040      ; y=16
-  DEFW FRAMEPIX+$140      ; y=17
-  DEFW FRAMEPIX+$240      ; y=18
-  DEFW FRAMEPIX+$340      ; y=19
-  DEFW FRAMEPIX+$440      ; y=20
-  DEFW FRAMEPIX+$540      ; y=21
-  DEFW FRAMEPIX+$640      ; y=22
-  DEFW FRAMEPIX+$740      ; y=23
-  DEFW FRAMEPIX+$060      ; y=24
-  DEFW FRAMEPIX+$160      ; y=25
-  DEFW FRAMEPIX+$260      ; y=26
-  DEFW FRAMEPIX+$360      ; y=27
-  DEFW FRAMEPIX+$460      ; y=28
-  DEFW FRAMEPIX+$560      ; y=29
-  DEFW FRAMEPIX+$660      ; y=30
-  DEFW FRAMEPIX+$760      ; y=31
-  DEFW FRAMEPIX+$080      ; y=32
-  DEFW FRAMEPIX+$180      ; y=33
-  DEFW FRAMEPIX+$280      ; y=34
-  DEFW FRAMEPIX+$380      ; y=35
-  DEFW FRAMEPIX+$480      ; y=36
-  DEFW FRAMEPIX+$580      ; y=37
-  DEFW FRAMEPIX+$680      ; y=38
-  DEFW FRAMEPIX+$780      ; y=39
-  DEFW FRAMEPIX+$0A0      ; y=40
-  DEFW FRAMEPIX+$1A0      ; y=41
-  DEFW FRAMEPIX+$2A0      ; y=42
-  DEFW FRAMEPIX+$3A0      ; y=43
-  DEFW FRAMEPIX+$4A0      ; y=44
-  DEFW FRAMEPIX+$5A0      ; y=45
-  DEFW FRAMEPIX+$6A0      ; y=46
-  DEFW FRAMEPIX+$7A0      ; y=47
-  DEFW FRAMEPIX+$0C0      ; y=48
-  DEFW FRAMEPIX+$1C0      ; y=49
-  DEFW FRAMEPIX+$2C0      ; y=50
-  DEFW FRAMEPIX+$3C0      ; y=51
-  DEFW FRAMEPIX+$4C0      ; y=52
-  DEFW FRAMEPIX+$5C0      ; y=53
-  DEFW FRAMEPIX+$6C0      ; y=54
-  DEFW FRAMEPIX+$7C0      ; y=55
-  DEFW FRAMEPIX+$0E0      ; y=56
-  DEFW FRAMEPIX+$1E0      ; y=57
-  DEFW FRAMEPIX+$2E0      ; y=58
-  DEFW FRAMEPIX+$3E0      ; y=59
-  DEFW FRAMEPIX+$4E0      ; y=60
-  DEFW FRAMEPIX+$5E0      ; y=61
-  DEFW FRAMEPIX+$6E0      ; y=62
-  DEFW FRAMEPIX+$7E0      ; y=63
-  DEFW FRAMEPIX+$800      ; y=64
-  DEFW FRAMEPIX+$900      ; y=65
-  DEFW FRAMEPIX+$A00      ; y=66
-  DEFW FRAMEPIX+$B00      ; y=67
-  DEFW FRAMEPIX+$C00      ; y=68
-  DEFW FRAMEPIX+$D00      ; y=69
-  DEFW FRAMEPIX+$E00      ; y=70
-  DEFW FRAMEPIX+$F00      ; y=71
-  DEFW FRAMEPIX+$820      ; y=72
-  DEFW FRAMEPIX+$920      ; y=73
-  DEFW FRAMEPIX+$A20      ; y=74
-  DEFW FRAMEPIX+$B20      ; y=75
-  DEFW FRAMEPIX+$C20      ; y=76
-  DEFW FRAMEPIX+$D20      ; y=77
-  DEFW FRAMEPIX+$E20      ; y=78
-  DEFW FRAMEPIX+$F20      ; y=79
-  DEFW FRAMEPIX+$840      ; y=80
-  DEFW FRAMEPIX+$940      ; y=81
-  DEFW FRAMEPIX+$A40      ; y=82
-  DEFW FRAMEPIX+$B40      ; y=83
-  DEFW FRAMEPIX+$C40      ; y=84
-  DEFW FRAMEPIX+$D40      ; y=85
-  DEFW FRAMEPIX+$E40      ; y=86
-  DEFW FRAMEPIX+$F40      ; y=87
-  DEFW FRAMEPIX+$860      ; y=88
-  DEFW FRAMEPIX+$960      ; y=89
-  DEFW FRAMEPIX+$A60      ; y=90
-  DEFW FRAMEPIX+$B60      ; y=91
-  DEFW FRAMEPIX+$C60      ; y=92
-  DEFW FRAMEPIX+$D60      ; y=93
-  DEFW FRAMEPIX+$E60      ; y=94
-  DEFW FRAMEPIX+$F60      ; y=95
-  DEFW FRAMEPIX+$880      ; y=96
-  DEFW FRAMEPIX+$980      ; y=97
-  DEFW FRAMEPIX+$A80      ; y=98
-  DEFW FRAMEPIX+$B80      ; y=99
-  DEFW FRAMEPIX+$C80      ; y=100
-  DEFW FRAMEPIX+$D80      ; y=101
-  DEFW FRAMEPIX+$E80      ; y=102
-  DEFW FRAMEPIX+$F80      ; y=103
-  DEFW FRAMEPIX+$8A0      ; y=104
-  DEFW FRAMEPIX+$9A0      ; y=105
-  DEFW FRAMEPIX+$AA0      ; y=106
-  DEFW FRAMEPIX+$BA0      ; y=107
-  DEFW FRAMEPIX+$CA0      ; y=108
-  DEFW FRAMEPIX+$DA0      ; y=109
-  DEFW FRAMEPIX+$EA0      ; y=110
-  DEFW FRAMEPIX+$FA0      ; y=111
-  DEFW FRAMEPIX+$8C0      ; y=112
-  DEFW FRAMEPIX+$9C0      ; y=113
-  DEFW FRAMEPIX+$AC0      ; y=114
-  DEFW FRAMEPIX+$BC0      ; y=115
-  DEFW FRAMEPIX+$CC0      ; y=116
-  DEFW FRAMEPIX+$DC0      ; y=117
-  DEFW FRAMEPIX+$EC0      ; y=118
-  DEFW FRAMEPIX+$FC0      ; y=119
-  DEFW FRAMEPIX+$8E0      ; y=120
-  DEFW FRAMEPIX+$9E0      ; y=121
-  DEFW FRAMEPIX+$AE0      ; y=122
-  DEFW FRAMEPIX+$BE0      ; y=123
-  DEFW FRAMEPIX+$CE0      ; y=124
-  DEFW FRAMEPIX+$DE0      ; y=125
-  DEFW FRAMEPIX+$EE0      ; y=126
-  DEFW FRAMEPIX+$FE0      ; y=127
-
-; Rope animation table
-;
-; Used by the routine at DRAWTHINGS. The first half of this table controls the
-; x-coordinates at which the segments of rope are drawn, and the second half
-; controls the y-coordinates. For a given rope animation frame F
-; (0x00<=F<=0x36), the 32 entries from F to F+31 inclusive (one for each of the
-; 32 segments of rope below the topmost one) in each half of the table are
-; used; thus the batch of entries used 'slides' up and down the table as F
-; increases and decreases.
-ROPEANIM:
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; These values determine how much to
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; rotate the rope drawing byte (which in
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; turn determines the x-coordinate at
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; which each segment of rope is drawn)
-  DEFB $01,$01,$01,$01,$01,$01,$01,$01
-  DEFB $01,$01,$01,$01,$02,$02,$02,$02
-  DEFB $02,$02,$02,$02,$02,$02,$02,$02
-  DEFB $02,$02,$02,$02,$02,$02,$02,$02
-  DEFB $02,$02,$01,$02,$02,$01,$01,$02
-  DEFB $01,$01,$02,$02,$03,$02,$03,$02
-  DEFB $03,$03,$03,$03,$03,$03
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; Unused
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; These values determine the
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; y-coordinate of each segment of rope
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; relative to the one above it
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06
-  DEFB $06,$06,$06,$06,$06,$06,$06,$06
-  DEFB $04,$06,$06,$04,$06,$04,$06,$04
-  DEFB $06,$04,$04,$04,$06,$04,$04,$04
-  DEFB $04,$04,$04,$04,$04,$04,$04,$04
-  DEFB $04,$04,$04,$04,$04,$04,$04,$04
-  DEFB $04,$04,$04,$04,$04,$04
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; Unused
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  DEFB $00,$00
+  DEFS $0A98
 
 ; Attributes for the top two-thirds of the title screen
 ;
@@ -3537,63 +3356,6 @@ ATTRSLOWER:
   DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
   DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
-
-  DEFS $40
-
-; Foot/barrel graphic data
-;
-; Used by the routine at GAMEOVER to display the game over sequence.
-;
-; The foot also appears as a guardian in The Nightmare Room.
-FOOT:
-  DEFB $10,$80,$10,$80,$10,$80,$10,$80,$10,$80,$10,$80,$10,$80,$20,$80
-  DEFB $20,$80,$48,$42,$88,$35,$84,$09,$80,$01,$80,$02,$43,$8D,$3C,$76
-; The barrel also appears as a guardian in Ballroom East and Top Landing.
-BARREL:
-  DEFB $37,$EC,$77,$EE,$00,$00,$6F,$F6,$EF,$F7,$EF,$F7,$D5,$5B,$DB,$BB
-  DEFB $D5,$5B,$DF,$FB,$ED,$77,$EE,$F7,$6D,$76,$00,$00,$77,$EE,$37,$EC
-
-; Maria sprite graphic data
-;
-; Used by the routine at BEDANDBATH to draw Maria in Master Bedroom.
-;
-; Maria also appears as a guardian in The Nightmare Room.
-MARIA0:
-  DEFB $03,$00,$03,$C0,$01,$E0,$01,$40,$01,$E0,$07,$80,$1F,$F8,$3F,$FC
-  DEFB $37,$6C,$14,$98,$0F,$F0,$0F,$F0,$0F,$F0,$02,$40,$02,$40,$06,$60
-MARIA1:
-  DEFB $03,$00,$03,$C0,$01,$E0,$01,$40,$01,$E0,$07,$80,$1F,$F8,$3F,$FC
-  DEFB $37,$6C,$14,$98,$0F,$F0,$0F,$F0,$0F,$F0,$02,$40,$06,$40,$02,$60
-MARIA2:
-  DEFB $03,$00,$03,$C0,$01,$E0,$01,$40,$01,$E0,$07,$80,$1F,$FC,$3F,$FE
-  DEFB $37,$66,$14,$92,$0F,$F0,$0F,$F0,$0F,$F0,$02,$40,$02,$40,$06,$60
-MARIA3:
-  DEFB $03,$00,$03,$C0,$01,$E0,$01,$40,$01,$E0,$07,$80,$1F,$FF,$3F,$FE
-  DEFB $37,$60,$14,$90,$0F,$F0,$0F,$F0,$0F,$F0,$02,$40,$02,$40,$06,$60
-
-; Willy sprite graphic data
-;
-; Used by the routines at DRAWLIVES, GAMEOVER and DRAWWILLY.
-MANDAT:
-  DEFB $3C,$00,$3C,$00,$7E,$00,$34,$00,$3E,$00,$3C,$00,$18,$00,$3C,$00
-  DEFB $7E,$00,$7E,$00,$F7,$00,$FB,$00,$3C,$00,$76,$00,$6E,$00,$77,$00
-  DEFB $0F,$00,$0F,$00,$1F,$80,$0D,$00,$0F,$80,$0F,$00,$06,$00,$0F,$00
-  DEFB $1B,$80,$1B,$80,$1B,$80,$1D,$80,$0F,$00,$06,$00,$06,$00,$07,$00
-WILLYR2:
-  DEFB $03,$C0,$03,$C0,$07,$E0,$03,$40,$03,$E0,$03,$C0,$01,$80,$03,$C0
-  DEFB $07,$E0,$07,$E0,$0F,$70,$0F,$B0,$03,$C0,$07,$60,$06,$E0,$07,$70
-  DEFB $00,$F0,$00,$F0,$01,$F8,$00,$D0,$00,$F8,$00,$F0,$00,$60,$00,$F0
-  DEFB $01,$F8,$03,$FC,$07,$FE,$06,$F6,$00,$F8,$01,$DA,$03,$0E,$03,$8C
-  DEFB $0F,$00,$0F,$00,$1F,$80,$0B,$00,$1F,$00,$0F,$00,$06,$00,$0F,$00
-  DEFB $1F,$80,$3F,$C0,$7F,$E0,$6F,$60,$1F,$00,$5B,$80,$70,$C0,$31,$C0
-  DEFB $03,$C0,$03,$C0,$07,$E0,$02,$C0,$07,$C0,$03,$C0,$01,$80,$03,$C0
-  DEFB $07,$E0,$07,$E0,$0E,$F0,$0D,$F0,$03,$C0,$06,$E0,$07,$60,$0E,$E0
-  DEFB $00,$F0,$00,$F0,$01,$F8,$00,$B0,$01,$F0,$00,$F0,$00,$60,$00,$F0
-  DEFB $01,$D8,$01,$D8,$01,$D8,$01,$B8,$00,$F0,$00,$60,$00,$60,$00,$E0
-  DEFB $00,$3C,$00,$3C,$00,$7E,$00,$2C,$00,$7C,$00,$3C,$00,$18,$00,$3C
-  DEFB $00,$7E,$00,$7E,$00,$EF,$00,$DF,$00,$3C,$00,$6E,$00,$76,$00,$EE
-
-  DEFS $0200
 
 ; Entity definitions
 ;
@@ -5574,6 +5336,187 @@ ITEMTABLE2:
   DEFB $C8                ; Item 0xFE at (14,8) in The Banyan Tree
   DEFB $B7                ; Item 0xFF at (13,23) in The Bathroom
 
+; Screen buffer address lookup table
+;
+; Used by the routines at GAMEOVER, DRAWTHINGS and DRAWWILLY. The value of the
+; Nth entry (0<=N<=127) in this lookup table is the screen buffer address for
+; the point with pixel coordinates (x,y)=(0,N), with the origin (0,0) at the
+; top-left corner.
+SBUFADDRS:
+  DEFW FRAMEPIX+$000      ; y=0
+  DEFW FRAMEPIX+$100      ; y=1
+  DEFW FRAMEPIX+$200      ; y=2
+  DEFW FRAMEPIX+$300      ; y=3
+  DEFW FRAMEPIX+$400      ; y=4
+  DEFW FRAMEPIX+$500      ; y=5
+  DEFW FRAMEPIX+$600      ; y=6
+  DEFW FRAMEPIX+$700      ; y=7
+  DEFW FRAMEPIX+$020      ; y=8
+  DEFW FRAMEPIX+$120      ; y=9
+  DEFW FRAMEPIX+$220      ; y=10
+  DEFW FRAMEPIX+$320      ; y=11
+  DEFW FRAMEPIX+$420      ; y=12
+  DEFW FRAMEPIX+$520      ; y=13
+  DEFW FRAMEPIX+$620      ; y=14
+  DEFW FRAMEPIX+$720      ; y=15
+  DEFW FRAMEPIX+$040      ; y=16
+  DEFW FRAMEPIX+$140      ; y=17
+  DEFW FRAMEPIX+$240      ; y=18
+  DEFW FRAMEPIX+$340      ; y=19
+  DEFW FRAMEPIX+$440      ; y=20
+  DEFW FRAMEPIX+$540      ; y=21
+  DEFW FRAMEPIX+$640      ; y=22
+  DEFW FRAMEPIX+$740      ; y=23
+  DEFW FRAMEPIX+$060      ; y=24
+  DEFW FRAMEPIX+$160      ; y=25
+  DEFW FRAMEPIX+$260      ; y=26
+  DEFW FRAMEPIX+$360      ; y=27
+  DEFW FRAMEPIX+$460      ; y=28
+  DEFW FRAMEPIX+$560      ; y=29
+  DEFW FRAMEPIX+$660      ; y=30
+  DEFW FRAMEPIX+$760      ; y=31
+  DEFW FRAMEPIX+$080      ; y=32
+  DEFW FRAMEPIX+$180      ; y=33
+  DEFW FRAMEPIX+$280      ; y=34
+  DEFW FRAMEPIX+$380      ; y=35
+  DEFW FRAMEPIX+$480      ; y=36
+  DEFW FRAMEPIX+$580      ; y=37
+  DEFW FRAMEPIX+$680      ; y=38
+  DEFW FRAMEPIX+$780      ; y=39
+  DEFW FRAMEPIX+$0A0      ; y=40
+  DEFW FRAMEPIX+$1A0      ; y=41
+  DEFW FRAMEPIX+$2A0      ; y=42
+  DEFW FRAMEPIX+$3A0      ; y=43
+  DEFW FRAMEPIX+$4A0      ; y=44
+  DEFW FRAMEPIX+$5A0      ; y=45
+  DEFW FRAMEPIX+$6A0      ; y=46
+  DEFW FRAMEPIX+$7A0      ; y=47
+  DEFW FRAMEPIX+$0C0      ; y=48
+  DEFW FRAMEPIX+$1C0      ; y=49
+  DEFW FRAMEPIX+$2C0      ; y=50
+  DEFW FRAMEPIX+$3C0      ; y=51
+  DEFW FRAMEPIX+$4C0      ; y=52
+  DEFW FRAMEPIX+$5C0      ; y=53
+  DEFW FRAMEPIX+$6C0      ; y=54
+  DEFW FRAMEPIX+$7C0      ; y=55
+  DEFW FRAMEPIX+$0E0      ; y=56
+  DEFW FRAMEPIX+$1E0      ; y=57
+  DEFW FRAMEPIX+$2E0      ; y=58
+  DEFW FRAMEPIX+$3E0      ; y=59
+  DEFW FRAMEPIX+$4E0      ; y=60
+  DEFW FRAMEPIX+$5E0      ; y=61
+  DEFW FRAMEPIX+$6E0      ; y=62
+  DEFW FRAMEPIX+$7E0      ; y=63
+  DEFW FRAMEPIX+$800      ; y=64
+  DEFW FRAMEPIX+$900      ; y=65
+  DEFW FRAMEPIX+$A00      ; y=66
+  DEFW FRAMEPIX+$B00      ; y=67
+  DEFW FRAMEPIX+$C00      ; y=68
+  DEFW FRAMEPIX+$D00      ; y=69
+  DEFW FRAMEPIX+$E00      ; y=70
+  DEFW FRAMEPIX+$F00      ; y=71
+  DEFW FRAMEPIX+$820      ; y=72
+  DEFW FRAMEPIX+$920      ; y=73
+  DEFW FRAMEPIX+$A20      ; y=74
+  DEFW FRAMEPIX+$B20      ; y=75
+  DEFW FRAMEPIX+$C20      ; y=76
+  DEFW FRAMEPIX+$D20      ; y=77
+  DEFW FRAMEPIX+$E20      ; y=78
+  DEFW FRAMEPIX+$F20      ; y=79
+  DEFW FRAMEPIX+$840      ; y=80
+  DEFW FRAMEPIX+$940      ; y=81
+  DEFW FRAMEPIX+$A40      ; y=82
+  DEFW FRAMEPIX+$B40      ; y=83
+  DEFW FRAMEPIX+$C40      ; y=84
+  DEFW FRAMEPIX+$D40      ; y=85
+  DEFW FRAMEPIX+$E40      ; y=86
+  DEFW FRAMEPIX+$F40      ; y=87
+  DEFW FRAMEPIX+$860      ; y=88
+  DEFW FRAMEPIX+$960      ; y=89
+  DEFW FRAMEPIX+$A60      ; y=90
+  DEFW FRAMEPIX+$B60      ; y=91
+  DEFW FRAMEPIX+$C60      ; y=92
+  DEFW FRAMEPIX+$D60      ; y=93
+  DEFW FRAMEPIX+$E60      ; y=94
+  DEFW FRAMEPIX+$F60      ; y=95
+  DEFW FRAMEPIX+$880      ; y=96
+  DEFW FRAMEPIX+$980      ; y=97
+  DEFW FRAMEPIX+$A80      ; y=98
+  DEFW FRAMEPIX+$B80      ; y=99
+  DEFW FRAMEPIX+$C80      ; y=100
+  DEFW FRAMEPIX+$D80      ; y=101
+  DEFW FRAMEPIX+$E80      ; y=102
+  DEFW FRAMEPIX+$F80      ; y=103
+  DEFW FRAMEPIX+$8A0      ; y=104
+  DEFW FRAMEPIX+$9A0      ; y=105
+  DEFW FRAMEPIX+$AA0      ; y=106
+  DEFW FRAMEPIX+$BA0      ; y=107
+  DEFW FRAMEPIX+$CA0      ; y=108
+  DEFW FRAMEPIX+$DA0      ; y=109
+  DEFW FRAMEPIX+$EA0      ; y=110
+  DEFW FRAMEPIX+$FA0      ; y=111
+  DEFW FRAMEPIX+$8C0      ; y=112
+  DEFW FRAMEPIX+$9C0      ; y=113
+  DEFW FRAMEPIX+$AC0      ; y=114
+  DEFW FRAMEPIX+$BC0      ; y=115
+  DEFW FRAMEPIX+$CC0      ; y=116
+  DEFW FRAMEPIX+$DC0      ; y=117
+  DEFW FRAMEPIX+$EC0      ; y=118
+  DEFW FRAMEPIX+$FC0      ; y=119
+  DEFW FRAMEPIX+$8E0      ; y=120
+  DEFW FRAMEPIX+$9E0      ; y=121
+  DEFW FRAMEPIX+$AE0      ; y=122
+  DEFW FRAMEPIX+$BE0      ; y=123
+  DEFW FRAMEPIX+$CE0      ; y=124
+  DEFW FRAMEPIX+$DE0      ; y=125
+  DEFW FRAMEPIX+$EE0      ; y=126
+  DEFW FRAMEPIX+$FE0      ; y=127
+
+; Rope animation table
+;
+; Used by the routine at DRAWTHINGS. The first half of this table controls the
+; x-coordinates at which the segments of rope are drawn, and the second half
+; controls the y-coordinates. For a given rope animation frame F
+; (0x00<=F<=0x36), the 32 entries from F to F+31 inclusive (one for each of the
+; 32 segments of rope below the topmost one) in each half of the table are
+; used; thus the batch of entries used 'slides' up and down the table as F
+; increases and decreases.
+ROPEANIM:
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; These values determine how much to
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; rotate the rope drawing byte (which in
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; turn determines the x-coordinate at
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; which each segment of rope is drawn)
+  DEFB $01,$01,$01,$01,$01,$01,$01,$01
+  DEFB $01,$01,$01,$01,$02,$02,$02,$02
+  DEFB $02,$02,$02,$02,$02,$02,$02,$02
+  DEFB $02,$02,$02,$02,$02,$02,$02,$02
+  DEFB $02,$02,$01,$02,$02,$01,$01,$02
+  DEFB $01,$01,$02,$02,$03,$02,$03,$02
+  DEFB $03,$03,$03,$03,$03,$03
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; Unused
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; These values determine the
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; y-coordinate of each segment of rope
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06 ; relative to the one above it
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06
+  DEFB $06,$06,$06,$06,$06,$06,$06,$06
+  DEFB $04,$06,$06,$04,$06,$04,$06,$04
+  DEFB $06,$04,$04,$04,$06,$04,$04,$04
+  DEFB $04,$04,$04,$04,$04,$04,$04,$04
+  DEFB $04,$04,$04,$04,$04,$04,$04,$04
+  DEFB $04,$04,$04,$04,$04,$04
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; Unused
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00
+  DEFB $00,$00
+
 ; Toilet graphics
 ;
 ; Used by the routine at DRAWTOILET.
@@ -5590,16 +5533,60 @@ TOILET3:
   DEFB $00,$0F,$04,$3F,$1E,$2F,$3B,$2F,$5D,$8F,$0E,$8F,$07,$CF,$0F,$CF
   DEFB $00,$08,$3F,$F8,$3F,$F0,$3F,$EE,$1F,$DF,$1F,$DB,$0F,$FB,$0F,$FB
 
-; Unused
-  DEFB $80,$80,$80,$80,$8C,$8F,$8F,$8F,$8F,$8F,$80,$80,$BF,$8F,$8F,$8F
-  DEFB $85,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80
-  DEFB $80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80
-  DEFB $80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80
-  DEFB $80,$80,$BF,$BF,$BF,$BF,$BF,$BF,$BF,$BF,$BF,$8F,$B3,$B0,$B0,$80
-  DEFB $85,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80
-  DEFB $80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80
-  DEFB $80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80,$80
-  DEFS $0400
+  DEFS $C0
+
+; Foot/barrel graphic data
+;
+; Used by the routine at GAMEOVER to display the game over sequence.
+;
+; The foot also appears as a guardian in The Nightmare Room.
+FOOT:
+  DEFB $10,$80,$10,$80,$10,$80,$10,$80,$10,$80,$10,$80,$10,$80,$20,$80
+  DEFB $20,$80,$48,$42,$88,$35,$84,$09,$80,$01,$80,$02,$43,$8D,$3C,$76
+; The barrel also appears as a guardian in Ballroom East and Top Landing.
+BARREL:
+  DEFB $37,$EC,$77,$EE,$00,$00,$6F,$F6,$EF,$F7,$EF,$F7,$D5,$5B,$DB,$BB
+  DEFB $D5,$5B,$DF,$FB,$ED,$77,$EE,$F7,$6D,$76,$00,$00,$77,$EE,$37,$EC
+
+; Maria sprite graphic data
+;
+; Used by the routine at BEDANDBATH to draw Maria in Master Bedroom.
+;
+; Maria also appears as a guardian in The Nightmare Room.
+MARIA0:
+  DEFB $03,$00,$03,$C0,$01,$E0,$01,$40,$01,$E0,$07,$80,$1F,$F8,$3F,$FC
+  DEFB $37,$6C,$14,$98,$0F,$F0,$0F,$F0,$0F,$F0,$02,$40,$02,$40,$06,$60
+MARIA1:
+  DEFB $03,$00,$03,$C0,$01,$E0,$01,$40,$01,$E0,$07,$80,$1F,$F8,$3F,$FC
+  DEFB $37,$6C,$14,$98,$0F,$F0,$0F,$F0,$0F,$F0,$02,$40,$06,$40,$02,$60
+MARIA2:
+  DEFB $03,$00,$03,$C0,$01,$E0,$01,$40,$01,$E0,$07,$80,$1F,$FC,$3F,$FE
+  DEFB $37,$66,$14,$92,$0F,$F0,$0F,$F0,$0F,$F0,$02,$40,$02,$40,$06,$60
+MARIA3:
+  DEFB $03,$00,$03,$C0,$01,$E0,$01,$40,$01,$E0,$07,$80,$1F,$FF,$3F,$FE
+  DEFB $37,$60,$14,$90,$0F,$F0,$0F,$F0,$0F,$F0,$02,$40,$02,$40,$06,$60
+
+; Willy sprite graphic data
+;
+; Used by the routines at DRAWLIVES, GAMEOVER and DRAWWILLY.
+MANDAT:
+  DEFB $3C,$00,$3C,$00,$7E,$00,$34,$00,$3E,$00,$3C,$00,$18,$00,$3C,$00
+  DEFB $7E,$00,$7E,$00,$F7,$00,$FB,$00,$3C,$00,$76,$00,$6E,$00,$77,$00
+  DEFB $0F,$00,$0F,$00,$1F,$80,$0D,$00,$0F,$80,$0F,$00,$06,$00,$0F,$00
+  DEFB $1B,$80,$1B,$80,$1B,$80,$1D,$80,$0F,$00,$06,$00,$06,$00,$07,$00
+WILLYR2:
+  DEFB $03,$C0,$03,$C0,$07,$E0,$03,$40,$03,$E0,$03,$C0,$01,$80,$03,$C0
+  DEFB $07,$E0,$07,$E0,$0F,$70,$0F,$B0,$03,$C0,$07,$60,$06,$E0,$07,$70
+  DEFB $00,$F0,$00,$F0,$01,$F8,$00,$D0,$00,$F8,$00,$F0,$00,$60,$00,$F0
+  DEFB $01,$F8,$03,$FC,$07,$FE,$06,$F6,$00,$F8,$01,$DA,$03,$0E,$03,$8C
+  DEFB $0F,$00,$0F,$00,$1F,$80,$0B,$00,$1F,$00,$0F,$00,$06,$00,$0F,$00
+  DEFB $1F,$80,$3F,$C0,$7F,$E0,$6F,$60,$1F,$00,$5B,$80,$70,$C0,$31,$C0
+  DEFB $03,$C0,$03,$C0,$07,$E0,$02,$C0,$07,$C0,$03,$C0,$01,$80,$03,$C0
+  DEFB $07,$E0,$07,$E0,$0E,$F0,$0D,$F0,$03,$C0,$06,$E0,$07,$60,$0E,$E0
+  DEFB $00,$F0,$00,$F0,$01,$F8,$00,$B0,$01,$F0,$00,$F0,$00,$60,$00,$F0
+  DEFB $01,$D8,$01,$D8,$01,$D8,$01,$B8,$00,$F0,$00,$60,$00,$60,$00,$E0
+  DEFB $00,$3C,$00,$3C,$00,$7E,$00,$2C,$00,$7C,$00,$3C,$00,$18,$00,$3C
+  DEFB $00,$7E,$00,$7E,$00,$EF,$00,$DF,$00,$3C,$00,$6E,$00,$76,$00,$EE
 
 ; Guardian graphics
 ;
