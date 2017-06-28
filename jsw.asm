@@ -9435,48 +9435,37 @@ ROOMS:
 ; ramp, border colour, item graphic, and exits. In this room, however, there
 ; are code remnants and unused data.
   DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00 ; Background tile
-  DEFB $00,$00,$00,$00,$00,$00,$00,$00
-  INC B
-  LD (HL),$00
-  JP NZ,$62E3
-  INC (IX+$06)
-  DEFB $10,$FF
-  LD (IX+$0A),C
-  LD (HL),B
-  JP $5E56
-  LD BC,$6007
-  LD A,($408E)
-  JR NZ,$EFE3
-  PUSH HL
-  PUSH BC
-  PUSH AF
-  LD DE,$5EE8
-  PUSH DE
-  PUSH BC
-  RET
-  POP AF
-  POP BC
-  DEC A
-  DEFB $F2,$E0
-  DEFB $00                ; Conveyor length (deliberately set to 0)
-  POP HL
-  RET
-  POP BC
-  DEFB $00                ; Ramp length (deliberately set to 0)
-  LD A,(HL)
-  CP $2C
-  RET NZ
-  RST $10
-  PUSH BC
-  LD A,(HL)
-  CP $23
-  CALL Z,$1D78
-  CALL $2B1C
-  EX (SP),HL
-  PUSH HL
-  DEFB $11
-; The next eight pairs of bytes specify the entities (ropes, arrows, guardians)
-; in this room.
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00 ; Floor (unused)
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00 ; Wall (unused)
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00 ; Nasty (unused)
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00 ; Ramp (unused)
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00,$00 ; Conveyor (unused)
+; The next four bytes are copied to CONVDIR and specify the direction, location
+; and length of the conveyor.
+  DEFB $00                ; Direction (left)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064 (unused)
+  DEFB $00                ; Length: 0 (there is no conveyor in this room)
+; The next four bytes are copied to RAMPDIR and specify the direction, location
+; and length of the ramp.
+  DEFB $01                ; Direction (up to the right)
+  DEFW ROOMATT+$000       ; Location in the attribute buffer at 24064: (unused)
+  DEFB $00                ; Length: 0 (there is no ramp in this room)
+; The next byte is copied to BORDER and specifies the border colour.
+  DEFB $00                ; Border colour
+; The next two bytes are copied to XROOM223, but are not used.
+  DEFB $00,$00            ; Unused
+; The next eight bytes are copied to ITEM and define the item graphic.
+  DEFB $00,$00,$00,$00,$00,$00,$00,$00 ; Item graphic (unused)
+; The next four bytes are copied to LEFT and specify the rooms to the left, to
+; the right, above and below.
+  DEFB $00                ; Room to the left (The Off Licence)
+  DEFB $00                ; Room to the right (The Off Licence)
+  DEFB $00                ; Room above (The Off Licence)
+  DEFB $00                ; Room below (The Off Licence)
+; The next three bytes are copied to XROOM237, but are not used.
+  DEFB $00,$00,$00        ; Unused
+; The next eight pairs of bytes are copied to ENTITIES and specify the entities
+; (ropes, arrows, guardians) in this room.
   DEFB $FF,$00            ; Terminator (ENTITY127)
   DEFB $00,$00            ; Nothing (ENTITYDEFS)
   DEFB $00,$00            ; Nothing (ENTITYDEFS)
